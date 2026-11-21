@@ -34,6 +34,17 @@
       golpean doble, saltarines, fantasmas que parpadean, y babosas/setas que se dividen al morir.
 - [x] Nuevo jefe final en varios niveles (seta, pulpo, cactus, yeti, dragón, calabaza).
 
+## v4 (carriles, obstáculos, ataques, puertas trampa)
+- [x] Carretera de 3 carriles; las puertas vienen en filas de 3.
+- [x] Obstáculos que cierran 1 o 2 carriles (vallas, rocas, hielo, lava, espinas, cristales según el nivel),
+      a veces en eslalon. Los bichitos que choquen se pierden (cuenta cuántos quedan dentro del carril).
+- [x] Ataques de monstruos por carril: el carril parpadea en rojo con un "!" y después llega una bola de energía.
+      Disparan cangrejos, pulpos, yetis, dragones, ojos, lava y sombras; los minijefes y el jefe apuntan a tu carril.
+- [x] Puertas trampa (borde amarillo animado): ⇄ cambia entre azul y rojo con temporizador,
+      ▲▲ roja que crece sin parar, ◀ ▶ puertas que se desplazan de carril.
+- [x] Grupo de bichitos más compacto para que quepa en un carril; consejos al empezar cada nivel.
+- [x] Algo menos de fuerza en los monstruos: la dificultad viene ahora sobre todo de moverse bien a tiempo.
+
 ## Ideas siguientes
 - Más niveles o un modo infinito.
 - Tienda de mejoras entre niveles con monedas.

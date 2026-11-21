@@ -4,7 +4,9 @@
   const W = 540, H = 960;
   const HORIZON = 330, PLAYER_Y = 830, CX = W / 2, ROAD_HALF = 210, ZK = 0.048;
   const SCROLL = 9, SPAWN_Z = 58, BULLET_RANGE = 44;
-  const MAX_SHOWN = 70;
+  const MAX_SHOWN = 50;
+  const LW = 2 / 3, LANE_X0 = [-1, -1 / 3, 1 / 3], LANE_C = [-2 / 3, 0, 2 / 3];
+  const laneOf = x => (x < -1 / 3 ? 0 : x < 1 / 3 ? 1 : 2);
   const WEAPONS = [null,
     { int: 0.6, dps: 1.2, speed: 20, name: 'Burbujitas', look: 'bubble' },
     { int: 0.46, dps: 1.8, speed: 28, name: 'Chispas', look: 'spark' },
@@ -17,31 +19,31 @@
   const ETRAITS = {
     babosa: { hp: 1, spd: 0.8, split: 2 },
     murci: { hp: 0.7, spd: 1.5, zig: 0.5, fly: 1 },
-    cangre: { hp: 1, spd: 1, zig: 0.8 },
+    cangre: { hp: 1, spd: 1, zig: 0.8, shoot: 1 },
     roca: { hp: 2.2, spd: 0.5, power: 2 },
     copito: { hp: 1, spd: 1.1, zig: 0.2 },
-    lava: { hp: 1.3, spd: 1 },
+    lava: { hp: 1.3, spd: 1, shoot: 1 },
     fantasma: { hp: 1, spd: 0.9, zig: 0.4, fly: 0.6, ghost: 1 },
-    sombra: { hp: 1.3, spd: 1.4 },
+    sombra: { hp: 1.3, spd: 1.4, shoot: 1 },
     seta: { hp: 1.1, spd: 0.9, split: 3 },
     abeja: { hp: 0.55, spd: 1.8, zig: 0.9, fly: 1 },
-    pulpo: { hp: 1.4, spd: 0.9, zig: 0.3 },
+    pulpo: { hp: 1.4, spd: 0.9, zig: 0.3, shoot: 1 },
     cactus: { hp: 1.9, spd: 0.6, power: 2 },
-    yeti: { hp: 2.2, spd: 0.8, power: 2 },
-    dragon: { hp: 1.2, spd: 1.5, fly: 0.7 },
+    yeti: { hp: 2.2, spd: 0.8, power: 2, shoot: 1 },
+    dragon: { hp: 1.2, spd: 1.5, fly: 0.7, shoot: 1 },
     calabaza: { hp: 1.2, spd: 1, hop: 1 },
-    ojo: { hp: 0.9, spd: 1.2, zig: 0.6, fly: 1.2 },
+    ojo: { hp: 0.9, spd: 1.2, zig: 0.6, fly: 1.2, shoot: 1 },
   };
 
   const LEVELS = [
-    { name: 'Pradera Florida', sky: ['#6ec3ff', '#dff3ff'], hills: ['#9bdc7a', '#7cc95c'], scenery: 'hills', grass: '#6cc24a', grass2: '#62b642', road: '#6b6f7a', curb: ['#ffffff', '#ff5a5a'], decor: ['flower', 'tree', 'bush', 'flower'], enemies: ['babosa', 'abeja', 'seta'], boss: 'babosa' },
-    { name: 'Bosque Susurro', sky: ['#59a9e6', '#d3efd5'], hills: ['#3c8a4a', '#2f7a3d'], scenery: 'forest', grass: '#3f9d4a', grass2: '#378f41', road: '#6a6458', curb: ['#ffffff', '#ffb02e'], decor: ['pine', 'tree', 'mushroom', 'pine'], enemies: ['seta', 'murci', 'abeja', 'babosa'], boss: 'seta' },
-    { name: 'Playa Coral', sky: ['#40bdf5', '#fff5cc'], hills: ['#5fd0e8', '#38b6d8'], scenery: 'sea', grass: '#f4dc9b', grass2: '#ecd28a', road: '#7a7f8c', curb: ['#ffffff', '#2fa8ff'], decor: ['palm', 'starfish', 'umbrella', 'palm'], enemies: ['cangre', 'pulpo', 'babosa'], boss: 'pulpo', sea: true },
-    { name: 'Desierto Solar', sky: ['#ffae4d', '#ffeab8'], hills: ['#e9b56a', '#d99f4f'], scenery: 'dunes', grass: '#e8b86a', grass2: '#deab5a', road: '#6e6a66', curb: ['#ffffff', '#ff5a5a'], decor: ['cactus', 'rock', 'cactus'], enemies: ['cactus', 'roca', 'cangre', 'abeja'], boss: 'cactus' },
-    { name: 'Montaña Nevada', sky: ['#86c3f5', '#f2f9ff'], hills: ['#c8dcef', '#a9c4de'], scenery: 'mountains', grass: '#f2f8ff', grass2: '#e1edf8', road: '#7b8594', curb: ['#ffffff', '#3d8fd6'], decor: ['snowpine', 'snowman', 'snowpine'], enemies: ['copito', 'yeti', 'roca'], boss: 'yeti' },
-    { name: 'Volcán Ardiente', sky: ['#4a1e2a', '#ff8a50'], hills: ['#5a2c26', '#3e1d19'], scenery: 'volcano', grass: '#4a3a35', grass2: '#413230', road: '#2f2a2a', curb: ['#ffcc33', '#ff3d00'], decor: ['lavarock', 'deadtree', 'lavarock'], enemies: ['lava', 'dragon', 'roca', 'murci'], boss: 'dragon' },
-    { name: 'Bosque Encantado', sky: ['#140f3c', '#4b3b8f'], hills: ['#241a5a', '#1b1446'], scenery: 'forest', grass: '#2c4a3a', grass2: '#274233', road: '#3e3a4c', curb: ['#ffffff', '#b56bff'], decor: ['mushroom', 'deadtree', 'lantern', 'mushroom'], enemies: ['fantasma', 'calabaza', 'murci', 'ojo'], boss: 'calabaza', night: true },
-    { name: 'Castillo Sombrío', sky: ['#2a1848', '#e07ab8'], hills: ['#4a3168', '#3a2554'], scenery: 'castle', grass: '#5b4a7a', grass2: '#53436f', road: '#3b3448', curb: ['#ffd54f', '#7c3aed'], decor: ['crystal', 'tower', 'crystal'], enemies: ['sombra', 'ojo', 'dragon', 'fantasma', 'yeti', 'lava'], boss: 'sombra' },
+    { name: 'Pradera Florida', wall: 'barrier', sky: ['#6ec3ff', '#dff3ff'], hills: ['#9bdc7a', '#7cc95c'], scenery: 'hills', grass: '#6cc24a', grass2: '#62b642', road: '#6b6f7a', curb: ['#ffffff', '#ff5a5a'], decor: ['flower', 'tree', 'bush', 'flower'], enemies: ['babosa', 'abeja', 'seta'], boss: 'babosa' },
+    { name: 'Bosque Susurro', wall: 'barrier', sky: ['#59a9e6', '#d3efd5'], hills: ['#3c8a4a', '#2f7a3d'], scenery: 'forest', grass: '#3f9d4a', grass2: '#378f41', road: '#6a6458', curb: ['#ffffff', '#ffb02e'], decor: ['pine', 'tree', 'mushroom', 'pine'], enemies: ['seta', 'murci', 'abeja', 'babosa'], boss: 'seta' },
+    { name: 'Playa Coral', wall: 'rock', sky: ['#40bdf5', '#fff5cc'], hills: ['#5fd0e8', '#38b6d8'], scenery: 'sea', grass: '#f4dc9b', grass2: '#ecd28a', road: '#7a7f8c', curb: ['#ffffff', '#2fa8ff'], decor: ['palm', 'starfish', 'umbrella', 'palm'], enemies: ['cangre', 'pulpo', 'babosa'], boss: 'pulpo', sea: true },
+    { name: 'Desierto Solar', wall: 'rock', sky: ['#ffae4d', '#ffeab8'], hills: ['#e9b56a', '#d99f4f'], scenery: 'dunes', grass: '#e8b86a', grass2: '#deab5a', road: '#6e6a66', curb: ['#ffffff', '#ff5a5a'], decor: ['cactus', 'rock', 'cactus'], enemies: ['cactus', 'roca', 'cangre', 'abeja'], boss: 'cactus' },
+    { name: 'Montaña Nevada', wall: 'ice', sky: ['#86c3f5', '#f2f9ff'], hills: ['#c8dcef', '#a9c4de'], scenery: 'mountains', grass: '#f2f8ff', grass2: '#e1edf8', road: '#7b8594', curb: ['#ffffff', '#3d8fd6'], decor: ['snowpine', 'snowman', 'snowpine'], enemies: ['copito', 'yeti', 'roca'], boss: 'yeti' },
+    { name: 'Volcán Ardiente', wall: 'lavarock', sky: ['#4a1e2a', '#ff8a50'], hills: ['#5a2c26', '#3e1d19'], scenery: 'volcano', grass: '#4a3a35', grass2: '#413230', road: '#2f2a2a', curb: ['#ffcc33', '#ff3d00'], decor: ['lavarock', 'deadtree', 'lavarock'], enemies: ['lava', 'dragon', 'roca', 'murci'], boss: 'dragon' },
+    { name: 'Bosque Encantado', wall: 'thorns', sky: ['#140f3c', '#4b3b8f'], hills: ['#241a5a', '#1b1446'], scenery: 'forest', grass: '#2c4a3a', grass2: '#274233', road: '#3e3a4c', curb: ['#ffffff', '#b56bff'], decor: ['mushroom', 'deadtree', 'lantern', 'mushroom'], enemies: ['fantasma', 'calabaza', 'murci', 'ojo'], boss: 'calabaza', night: true },
+    { name: 'Castillo Sombrío', wall: 'crystal', sky: ['#2a1848', '#e07ab8'], hills: ['#4a3168', '#3a2554'], scenery: 'castle', grass: '#5b4a7a', grass2: '#53436f', road: '#3b3448', curb: ['#ffd54f', '#7c3aed'], decor: ['crystal', 'tower', 'crystal'], enemies: ['sombra', 'ojo', 'dragon', 'fantasma', 'yeti', 'lava'], boss: 'sombra' },
   ];
 
   // ================== Utilidades ==================
@@ -225,7 +227,7 @@
     let weaponBarrels = 0, lastType = '', prevType = '';
     const grow = i => Math.floor(i * (0.4 + L * 0.05));
     const good = i => (rnd() < 0.1 + L * 0.02 ? { op: 'x', val: L >= 6 && rnd() < 0.15 ? 3 : 2 } : { op: '+', val: ri(3 + L, 6 + L * 2) + grow(i) });
-    const bad = i => (L >= 3 && rnd() < 0.2 ? { op: '÷', val: L >= 6 && rnd() < 0.4 ? 3 : 2 } : { op: '-', val: ri(4 + L, 6 + L * 3) + grow(i) });
+    const bad = i => (L >= 3 && rnd() < 0.2 ? { op: '÷', val: L >= 6 && rnd() < 0.4 ? 3 : 2 } : { op: '-', val: ri(3 + L, 5 + L * 2) + grow(i) });
     const hpAt = i => (0.6 + L * 0.2) * (1 + i * (0.08 + L * 0.006));
     // Grupo de enemigos; devuelve la profundidad que ocupa
     function horde(at, i, k, cx, spread = 0.16) {
@@ -243,6 +245,40 @@
       }
       return rows * 1.2;
     }
+    const shuffle = arr => { for (let k = arr.length - 1; k > 0; k--) { const j = Math.floor(rnd() * (k + 1)); [arr[k], arr[j]] = [arr[j], arr[k]]; } return arr; };
+    const gate = (lane, g, extra) => items.push(Object.assign({ kind: 'gate', pos: p, x0: LANE_X0[lane], x1: LANE_X0[lane] + LW, op: g.op, val: g.val }, extra || {}));
+    const wall = (lane, at) => items.push({ kind: 'wall', pos: at, x0: LANE_X0[lane], x1: LANE_X0[lane] + LW });
+    function gateRow(i) {
+      const ln = shuffle([0, 1, 2]);
+      if (i === 0) { gate(ln[0], { op: '+', val: ri(4, 6) + L * 2 }); gate(ln[1], { op: 'x', val: 2 }); gate(ln[2], { op: '+', val: ri(2, 4) + L }); return; }
+      if (i > 4 && rnd() < Math.min(0.8, 0.35 + L * 0.06)) {
+        const t = rnd();
+        if (t < 0.3) {
+          // Dos azules... pero una se vuelve roja cada poco
+          gate(ln[0], good(i));
+          gate(ln[1], good(i), { mode: 'flip', alt: bad(i), period: Math.max(0.8, 1.7 - L * 0.1) });
+          if (rnd() < 0.5) gate(ln[2], bad(i)); else wall(ln[2], p);
+        } else if (t < 0.55) {
+          // Roja que no para de crecer
+          gate(ln[0], good(i));
+          gate(ln[1], { op: '-', val: ri(1, 3) }, { mode: 'grow', rate: 1.4 + L * 0.35 });
+          if (rnd() < 0.6) wall(ln[2], p); else gate(ln[2], good(i), { mode: 'flip', alt: bad(i), period: Math.max(0.8, 1.7 - L * 0.1) });
+        } else if (t < 0.8 && L >= 2) {
+          // Puerta roja que barre los carriles + una azul que también se mueve
+          gate(1, bad(i), { mode: 'move', speed: 0.7 + L * 0.06, ph: rnd() * 6 });
+          p += 7;
+          gate(1, good(i), { mode: 'move', speed: 0.6 + L * 0.05, ph: rnd() * 6 });
+        } else {
+          gate(ln[0], good(i));
+          gate(ln[1], rnd() < 0.5 ? good(i) : bad(i));
+          wall(ln[2], p);
+        }
+      } else {
+        gate(ln[0], good(i));
+        gate(ln[1], i < 3 || rnd() < 0.5 ? good(i) : bad(i));
+        gate(ln[2], bad(i));
+      }
+    }
     for (let i = 0; i < nSeg; i++) {
       let type;
       if (i === 0) type = 'gates';
@@ -254,41 +290,44 @@
       else {
         do {
           const r = rnd();
-          type = r < 0.26 ? 'gates' : r < 0.66 ? 'horde' : r < 0.8 ? 'barrel' : 'guarded';
+          type = r < 0.26 ? 'gates' : r < 0.58 ? 'horde' : r < 0.7 ? 'barrel' : r < 0.84 ? 'walls' : 'guarded';
         } while (type === lastType && (type !== 'horde' || prevType === 'horde'));
       }
       prevType = lastType; lastType = type;
       if (type === 'gates' || type === 'guarded') {
         if (type === 'guarded') {
-          p += horde(p, i, 3 + Math.floor(L / 2) + Math.floor(i / 4), rnd() < 0.5 ? -0.5 : 0.5, 0.13) + 5;
+          p += horde(p, i, 3 + Math.floor(L / 2) + Math.floor(i / 4), LANE_C[ri(0, 2)], 0.12) + 5;
         }
-        let a, b;
-        const r = rnd();
-        if (i === 0) { a = { op: '+', val: ri(4, 6) + L * 2 }; b = { op: 'x', val: 2 }; }
-        else if (i < 3 || r < 0.6) { a = good(i); b = bad(i); }
-        else if (r < 0.82) { a = good(i); b = good(i); }
-        else { a = bad(i); b = bad(i); }
-        if (rnd() < 0.5) [a, b] = [b, a];
-        items.push({ kind: 'gate', pos: p, x0: -1, x1: 0, op: a.op, val: a.val });
-        items.push({ kind: 'gate', pos: p, x0: 0, x1: 1, op: b.op, val: b.val });
+        gateRow(i);
         p += 16 + rnd() * 5;
       } else if (type === 'barrel') {
         const hp = Math.round((5 + L * 2.5) * (1 + i * 0.12));
         const wantWeapon = weaponBarrels < 8 || rnd() < 0.5;
         if (i > 2 && rnd() < 0.5) {
-          const side = rnd() < 0.5 ? -1 : 1;
-          items.push({ kind: 'barrel', pos: p, x: side * 0.5, hp, reward: wantWeapon ? 'weapon' : 'squad', amount: ri(4, 6 + L) + grow(i) });
-          items.push({ kind: 'barrel', pos: p, x: -side * 0.5, hp: Math.round(hp * 0.8), reward: 'squad', amount: ri(4, 6 + L) + grow(i) });
+          const side = rnd() < 0.5 ? -1 : 1, bl = rnd() < 0.5 ? 0.667 : 0.667;
+          items.push({ kind: 'barrel', pos: p, x: side * bl, hp, reward: wantWeapon ? 'weapon' : 'squad', amount: ri(4, 6 + L) + grow(i) });
+          items.push({ kind: 'barrel', pos: p, x: rnd() < 0.5 ? 0 : -side * bl, hp: Math.round(hp * 0.8), reward: 'squad', amount: ri(4, 6 + L) + grow(i) });
         } else {
-          items.push({ kind: 'barrel', pos: p, x: rnd() * 1.2 - 0.6, hp, reward: wantWeapon ? 'weapon' : 'squad', amount: ri(5, 8 + L) + grow(i) });
+          items.push({ kind: 'barrel', pos: p, x: LANE_C[ri(0, 2)], hp, reward: wantWeapon ? 'weapon' : 'squad', amount: ri(5, 8 + L) + grow(i) });
         }
         if (wantWeapon) weaponBarrels++;
         p += 15 + rnd() * 4;
+      } else if (type === 'walls') {
+        const rows = 1 + ri(0, L >= 3 ? 2 : 1);
+        let prevFree = ri(0, 2);
+        for (let k = 0; k < rows; k++) {
+          const free = k === 0 ? prevFree : (prevFree + (rnd() < 0.5 ? 1 : 2)) % 3;
+          const two = rnd() < 0.35 + L * 0.06;
+          for (let lnn = 0; lnn < 3; lnn++) if (lnn !== free && (two || lnn === (free + 1) % 3)) wall(lnn, p);
+          prevFree = free;
+          p += 10 + rnd() * 3;
+        }
+        p += 10;
       } else if (type === 'mini') {
         // Minijefe con escolta
         const hp = hpAt(i);
-        p += horde(p, i, 6 + L, 0, 0.18) + 3;
-        items.push({ kind: 'enemy', pos: p, x: 0, type: lv.enemies[(miniCount++ + L) % lv.enemies.length], hp: hp * (8 + L), size: 3, power: 4 + Math.floor(L / 2), dyn: 9 + L, mini: true });
+        p += horde(p, i, 4 + Math.floor(L / 2), 0, 0.18) + 3;
+        items.push({ kind: 'enemy', pos: p, x: 0, type: lv.enemies[(miniCount++ + L) % lv.enemies.length], hp: hp * (8 + L), size: 3, power: 4 + Math.floor(L / 2), dyn: 6 + Math.floor(L / 2), mini: true });
         p += 22;
       } else {
         const k = i < 7 ? 3 + Math.floor(L / 2) + i : Math.min(34, 5 + L + Math.floor(i * (0.6 + L * 0.06)));
@@ -296,7 +335,8 @@
         if (rnd() < 0.3) {
           // Dos grupos, uno por carril
           const k2 = Math.ceil(k / 2);
-          depth = Math.max(horde(p, i, k2, -0.5, 0.14), horde(p, i, k - k2, 0.5, 0.14));
+          const l2 = shuffle([0, 1, 2]);
+          depth = Math.max(horde(p, i, k2, LANE_C[l2[0]], 0.12), horde(p, i, k - k2, LANE_C[l2[1]], 0.12));
         } else {
           depth = horde(p, i, k, rnd() * 1.0 - 0.5);
         }
@@ -351,8 +391,8 @@
     fx.length = 0;
     G = {
       L, lv: data.lv, items: data.items, idx: 0, end: data.end, bossHp: data.bossHp,
-      d: 0, count: 5, maxCount: 5, px: 0, weapon: 1, shootT: 0.2,
-      gates: [], barrels: [], enemies: [], bullets: [], boss: null, texts: [], members: [],
+      d: 0, count: 2 + L * 3, maxCount: 2 + L * 3, px: 0, weapon: 1, shootT: 0.2,
+      gates: [], walls: [], attacks: [], atkCD: 3, loss: {}, barrels: [], enemies: [], bullets: [], boss: null, texts: [], members: [],
       time: 0, state: 'play', scroll: SCROLL, shake: 0, bossDrain: 0, bossTouched: false, banner: 2.6, cheer: 0, alert: null, bossSpawnT: 2,
     };
     syncMembers();
@@ -364,7 +404,7 @@
 
   function formation(i) {
     if (i === 0) return [0, 0];
-    const r = Math.sqrt(i) * 0.052, a = i * 2.39996;
+    const r = Math.sqrt(i) * 0.034, a = i * 2.39996;
     return [Math.cos(a) * r, Math.sin(a) * r * 3.6];
   }
   function syncMembers() {
@@ -378,7 +418,7 @@
     if (G.members.length > m) G.members.length = m;
     G.maxCount = Math.max(G.maxCount, G.count);
   }
-  const squadRad = () => Math.sqrt(Math.min(G.count, MAX_SHOWN)) * 0.052 + 0.07;
+  const squadRad = () => Math.sqrt(Math.min(G.count, MAX_SHOWN)) * 0.034 + 0.06;
   const clampPx = () => { G.px = clamp(G.px, -0.92, 0.92); };
 
   function addText(x, z, text, color, size = 1) { G.texts.push({ x, z, text, color, size, t: 0 }); }
@@ -390,17 +430,40 @@
   }
 
   function spawnItem(it, z) {
-    if (it.kind === 'gate') G.gates.push({ z, x0: it.x0, x1: it.x1, op: it.op, val: it.val, prog: 0, flash: 0, done: false, used: false });
+    if (it.kind === 'gate') G.gates.push({ z, x0: it.x0, x1: it.x1, op: it.op, val: it.val, prog: 0, flash: 0, done: false, used: false, mode: it.mode || '', alt: it.alt ? { op: it.alt.op, val: it.alt.val } : null, period: it.period || 1.5, rate: it.rate || 0, acc: 0, flipT: it.period || 1.5, speed: it.speed || 0, ph: it.ph || 0 });
+    else if (it.kind === 'wall') G.walls.push({ z, x0: it.x0, x1: it.x1, done: false, flash: 0 });
     else if (it.kind === 'barrel') G.barrels.push({ z, x: it.x, hp: it.hp, maxHp: it.hp, reward: it.reward, amount: it.amount, flash: 0 });
     else {
       const tr = ETRAITS[it.type] || {};
-      const hp = (it.hp + Math.min(squadDps(), 200 * WEAPONS[G.weapon].dps) * (0.065 + G.L * 0.007) * (it.dyn || 1)) * (tr.hp || 1);
+      const hp = (it.hp + Math.min(squadDps(), 200 * WEAPONS[G.weapon].dps) * (0.05 + G.L * 0.005) * (it.dyn || 1)) * (tr.hp || 1);
       G.enemies.push({ z, x: it.x, type: it.type, hp, maxHp: hp, size: it.size, power: it.power * (tr.power || 1), flash: 0, wob: Math.random() * 6, speed: (2.5 + Math.random()) * (tr.spd || 1), tr, mini: !!it.mini, child: !!it.child });
       if (it.mini) { G.alert = { text: '¡MINIJEFE!', t: 2, color: '#ff8a3d' }; Sfx.boss(); }
     }
   }
+  // Quita bichitos según cuántos estén dentro de la franja [x0, x1]
+  function laneHit(x0, x1, sev, tag) {
+    const m = G.members.length;
+    if (!m || G.count <= 0) return false;
+    let inside = 0;
+    for (const mm of G.members) { const x = G.px + mm.ox; if (x > x0 - 0.025 && x < x1 + 0.025) inside++; }
+    if (!inside) return false;
+    const lost = Math.min(G.count, Math.max(1, Math.ceil((G.count * inside / m) * sev)));
+    G.count -= lost; G.shake = 0.25; Sfx.ouch();
+    G.loss[tag] = (G.loss[tag] || 0) + lost;
+    addText(G.px, 0.5, '-' + lost, '#FF5A5A', 1.3);
+    burst(sx(G.px, 0), sy(0) - 30, '#ff7a7a', 14, 200, 5);
+    syncMembers();
+    return true;
+  }
+  function launchAttack(srcZ, color, aimed) {
+    if (G.atkCD > 0 || G.time < 9) return false;
+    const lane = aimed || Math.random() < 0.6 ? laneOf(G.px) : Math.floor(Math.random() * 3);
+    G.attacks.push({ x0: LANE_X0[lane], x1: LANE_X0[lane] + LW, z: Math.min(srcZ, 40), warn: Math.max(0.65, 1.05 - G.L * 0.04), color, hit: false });
+    G.atkCD = Math.max(1, 2.6 - G.L * 0.15) * (1.7 - 0.7 * clamp(G.d / G.end, 0, 1));
+    return true;
+  }
   const squadDps = () => G.count * WEAPONS[G.weapon].dps;
-  const hurtMult = () => Math.max(1, Math.round(G.count / 45));
+  const hurtMult = () => Math.max(1, Math.round(G.count / 60));
 
   const gateStep = g => (3 + G.L * 1.5) * (g.op === 'x' || g.op === '÷' ? 12 : 1);
   function bumpGate(g) {
@@ -422,6 +485,7 @@
     addText(G.px, 1, (diff >= 0 ? '+' : '') + diff, diff >= 0 ? '#7CFF6B' : '#FF5A5A', 1.5);
     const y = sy(0) - 60, x = sx(G.px, 0);
     burst(x, y, diff >= 0 ? '#7fd3ff' : '#ff7a7a', 18, 220, 6);
+    if (diff < 0) G.loss.puerta = (G.loss.puerta || 0) - diff;
     if (diff >= 0) { Sfx.good(); G.cheer = 0.6; } else { Sfx.bad(); G.shake = 0.25; }
     g.used = true;
     syncMembers();
@@ -448,6 +512,7 @@
   }
 
   function damage(kind, t, dmg) {
+    if (kind === 'wall') { t.flash = 0.06; return; }
     if (kind === 'gate') {
       t.prog += dmg; t.flash = 0.08;
       const step = gateStep(t);
@@ -525,25 +590,52 @@
       spawnItem(it, it.pos - G.d);
     }
     if (!G.boss && G.d >= G.end) {
-      const bhp = Math.round(G.bossHp + squadDps() * (10 + G.L * 0.4));
+      const bhp = Math.round(G.bossHp + squadDps() * (7 + G.L * 0.3));
       G.boss = { z: 50, x: 0, type: G.lv.boss, hp: bhp, maxHp: bhp, size: 5, flash: 0, speed: 2.3, wob: 0 };
       Sfx.boss();
       Sfx.music(G.L, 'boss');
     }
 
     // Movimiento de objetos
-    for (const g of G.gates) { g.z -= dz; if (g.flash > 0) g.flash -= dt; }
+    for (const g of G.gates) {
+      g.z -= dz; if (g.flash > 0) g.flash -= dt;
+      if (g.done) continue;
+      if (g.mode === 'flip') {
+        g.flipT -= dt;
+        if (g.flipT <= 0) { g.flipT += g.period; const cur = { op: g.op, val: g.val }; g.op = g.alt.op; g.val = g.alt.val; g.alt = cur; g.prog = 0; g.flash = 0.15; if (g.z < 30) Sfx.tick(); }
+      } else if (g.mode === 'grow' && g.op === '-') {
+        g.acc += g.rate * dt;
+        while (g.acc >= 1) { g.acc -= 1; g.val = Math.min(99, g.val + 1); }
+      } else if (g.mode === 'move') {
+        const c = Math.sin(G.time * g.speed + g.ph) * LW;
+        g.x0 = c - LW / 2; g.x1 = c + LW / 2;
+      }
+    }
+    for (const w of G.walls) { w.z -= dz; if (w.flash > 0) w.flash -= dt; }
+    if (G.atkCD > 0) G.atkCD -= dt;
+    for (const a of G.attacks) {
+      if (a.warn > 0) { a.warn -= dt; continue; }
+      a.z -= 34 * dt;
+      if (!a.hit && a.z <= 0.4) { a.hit = true; laneHit(a.x0, a.x1, 0.55, 'ataque'); }
+    }
+    G.attacks = G.attacks.filter(a => a.z > -3);
     for (const b of G.barrels) { b.z -= dz; if (b.flash > 0) b.flash -= dt; }
     for (const e of G.enemies) {
       e.z -= dz + (e.z < 24 ? e.speed : 0) * dt; e.wob += dt * 9;
       if (e.flash > 0) e.flash -= dt;
       if (e.tr.zig) e.x = clamp(e.x + Math.cos(e.wob * 0.35) * e.tr.zig * dt, -0.95, 0.95);
+      if ((e.tr.shoot || e.mini) && e.z < 42 && e.z > 12) {
+        e.cd = (e.cd === undefined ? 1 + Math.random() * 2 : e.cd) - dt;
+        if (e.cd <= 0 && launchAttack(e.z, Sprites.ENEMIES[e.type].body, e.mini)) e.cd = e.mini ? 2.6 : 4 + Math.random() * 3;
+      }
       if (e.z < 16 && e.z > 0) e.x += clamp(G.px - e.x, -1, 1) * 0.35 * dt;
     }
     const B = G.boss;
     if (B) {
       B.wob += dt * 4; if (B.flash > 0) B.flash -= dt;
       B.x += (G.px - B.x) * 0.6 * dt;
+      G.bossAtkT = (G.bossAtkT === undefined ? 2 : G.bossAtkT) - dt;
+      if (G.bossAtkT <= 0 && B.z > 4) { G.atkCD = 0; if (launchAttack(B.z, Sprites.ENEMIES[B.type].body, true)) G.bossAtkT = Math.max(1.5, 3.2 - G.L * 0.15); }
       G.bossSpawnT -= dt;
       if (G.bossSpawnT <= 0 && B.z > 6) {
         G.bossSpawnT = Math.max(1.8, 4 - G.L * 0.25);
@@ -599,6 +691,10 @@
         if (t.dead) continue;
         if (t.z >= lo && t.z <= hi && Math.abs(b.x - t.x) < 0.17 && t.z < hz) { hit = t; hk = 'barrel'; hz = t.z; }
       }
+      for (const w of G.walls) {
+        if (w.done) continue;
+        if (w.z >= lo && w.z <= hi && b.x >= w.x0 && b.x < w.x1 && w.z < hz) { hit = w; hk = 'wall'; hz = w.z; }
+      }
       for (const e of G.enemies) {
         if (e.dead) continue;
         if (e.z >= lo - 0.3 && e.z <= hi && Math.abs(b.x - e.x) < 0.06 + 0.075 * e.size && e.z < hz) { hit = e; hk = 'enemy'; hz = e.z; }
@@ -617,6 +713,14 @@
         if (G.px >= g.x0 && G.px < g.x1) applyGate(g);
       }
     }
+    // Chocar con obstáculos
+    for (const w of G.walls) {
+      if (!w.done && w.z <= 0.4) {
+        w.done = true;
+        if (laneHit(w.x0, w.x1, 0.5, 'muro')) burst(sx((w.x0 + w.x1) / 2, 0), sy(0) - 30, '#9a8f84', 12, 200, 6);
+      }
+    }
+    G.walls = G.walls.filter(w => w.z > -3);
     // Chocar con barriles
     const sr = squadRad();
     for (const t of G.barrels) {
@@ -636,6 +740,7 @@
       if (e.z <= 0.7 && e.z > -1.5 && Math.abs(e.x - G.px) < sr + 0.05 * e.size) {
         e.dead = true;
         const lost = Math.min(G.count, e.power * hurtMult());
+        G.loss.enemigo = (G.loss.enemigo || 0) + lost;
         G.count -= lost; G.shake = 0.2; Sfx.ouch();
         addText(G.px, 0.5, '-' + lost, '#FF5A5A', 1.1);
         burst(sx(e.x, e.z), sy(e.z) - 20, Sprites.ENEMIES[e.type].body, 10, 180, 5);
@@ -770,7 +875,8 @@
     const f6 = off % 6;
     for (let i = -1; i < 20; i++) {
       const za = i * 6 - f6;
-      quad(-0.025, 0.025, za, za + 3, 'rgba(255,255,255,.85)');
+      quad(-1 / 3 - 0.02, -1 / 3 + 0.02, za, za + 3, 'rgba(255,255,255,.85)');
+      quad(1 / 3 - 0.02, 1 / 3 + 0.02, za, za + 3, 'rgba(255,255,255,.85)');
     }
   }
 
@@ -922,6 +1028,11 @@
     ctx.fillStyle = g.flash > 0 ? (goodGate ? 'rgba(140,210,255,0.75)' : 'rgba(255,150,160,0.75)') : fill;
     ctx.fill();
     ctx.lineWidth = 5 * s; ctx.strokeStyle = edge; ctx.stroke();
+    if (g.mode && !g.done) {
+      ctx.setLineDash([10 * s, 8 * s]); ctx.lineDashOffset = -G.time * 40 * s;
+      ctx.lineWidth = 5 * s; ctx.strokeStyle = '#ffe14d'; ctx.stroke();
+      ctx.setLineDash([]);
+    }
     // brillo
     const gr = ctx.createLinearGradient(0, yb - h, 0, yb);
     gr.addColorStop(0, 'rgba(255,255,255,.35)'); gr.addColorStop(0.5, 'rgba(255,255,255,0)');
@@ -931,7 +1042,20 @@
     ctx.fillRect(xa - 4 * s, yb - h - 6 * s, 8 * s, h + 6 * s);
     ctx.fillRect(xb - 4 * s, yb - h - 6 * s, 8 * s, h + 6 * s);
     const sym = g.op === 'x' ? '×' : g.op;
-    outlinedText(sym + g.val, (xa + xb) / 2, yb - h * 0.52, 60 * s * (g.flash > 0 ? 1.08 : 1), '#fff');
+    outlinedText(sym + g.val, (xa + xb) / 2, yb - h * 0.52, 50 * s * (g.flash > 0 ? 1.12 : 1), '#fff');
+    // indicadores de puertas con trampa
+    if (g.mode === 'flip' && !g.done) {
+      const f = clamp(g.flipT / g.period, 0, 1), cx = (xa + xb) / 2, cy = yb - h - 34 * s;
+      ctx.beginPath(); ctx.arc(cx, cy, 30 * s, 0, Math.PI * 2); ctx.fillStyle = 'rgba(20,12,50,.85)'; ctx.fill();
+      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, 25 * s, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * f); ctx.closePath();
+      const nxtGood = g.alt.op === '+' || g.alt.op === 'x';
+      ctx.fillStyle = nxtGood ? '#4aa8ff' : '#ff4d5a'; ctx.fill();
+      outlinedText('⇄', cx, cy, 34 * s, '#fff');
+    } else if (g.mode === 'grow' && g.op === '-' && !g.done) {
+      outlinedText('▲▲', (xa + xb) / 2, yb - h - 22 * s, 30 * s * (1 + 0.2 * Math.sin(G.time * 10)), '#ff4d5a');
+    } else if (g.mode === 'move' && !g.done) {
+      outlinedText('◀ ▶', (xa + xb) / 2, yb - h - 22 * s, 28 * s, '#fff');
+    }
     // progreso de mejora
     const p = clamp(g.prog / gateStep(g), 0, 1);
     if (p > 0.01) {
@@ -940,6 +1064,78 @@
       ctx.fillStyle = '#fff'; ctx.fillRect(bx, by, bw * p, 7 * s);
     }
     ctx.globalAlpha = 1;
+  }
+
+  function drawWall(w) {
+    const z = w.z, s = sc(z);
+    const xa = sx(w.x0 + 0.04, z), xb = sx(w.x1 - 0.04, z), y = sy(z), wd = xb - xa;
+    const st = G.lv.wall;
+    ctx.globalAlpha = w.done ? clamp(1 + z / 1.5, 0, 1) : 1;
+    ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.beginPath(); ctx.ellipse((xa + xb) / 2, y, wd * 0.55, 10 * s, 0, 0, Math.PI * 2); ctx.fill();
+    switch (st) {
+      case 'barrier': {
+        const h = 72 * s;
+        ctx.fillStyle = '#555'; ctx.fillRect(xa + wd * 0.12, y - h, 6 * s, h); ctx.fillRect(xb - wd * 0.12 - 6 * s, y - h, 6 * s, h);
+        roundRect(xa, y - h - 4 * s, wd, 36 * s, 6 * s); ctx.fillStyle = '#fff'; ctx.fill();
+        ctx.save(); ctx.clip(); ctx.fillStyle = '#e53935';
+        for (let k = -2; k < 12; k++) { const x0 = xa + k * 26 * s; ctx.beginPath(); ctx.moveTo(x0, y - h + 32 * s); ctx.lineTo(x0 + 13 * s, y - h + 32 * s); ctx.lineTo(x0 + 26 * s, y - h - 4 * s); ctx.lineTo(x0 + 13 * s, y - h - 4 * s); ctx.closePath(); ctx.fill(); }
+        ctx.restore();
+        circle(xa + 8 * s, y - h - 8 * s, 5 * s, '#ffb300'); circle(xb - 8 * s, y - h - 8 * s, 5 * s, '#ffb300');
+        break;
+      }
+      case 'rock':
+      case 'lavarock': {
+        const c1 = st === 'rock' ? '#9a8f84' : '#3a2a26', c2 = st === 'rock' ? '#7a7068' : '#241815';
+        for (const [fx, fr] of [[0.22, 0.34], [0.78, 0.32], [0.5, 0.44]]) {
+          const cx = xa + wd * fx, r = wd * fr;
+          ctx.fillStyle = c2; ctx.beginPath(); ctx.ellipse(cx, y - r * 0.7, r, r * 0.8, 0, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = c1; ctx.beginPath(); ctx.ellipse(cx - r * 0.1, y - r * 0.8, r * 0.85, r * 0.65, 0, 0, Math.PI * 2); ctx.fill();
+        }
+        if (st === 'lavarock') { ctx.strokeStyle = '#ff7a1f'; ctx.lineWidth = 3 * s; ctx.beginPath(); ctx.moveTo(xa + wd * 0.3, y - wd * 0.2); ctx.lineTo(xa + wd * 0.45, y - wd * 0.35); ctx.lineTo(xa + wd * 0.6, y - wd * 0.25); ctx.stroke(); }
+        break;
+      }
+      case 'ice': {
+        const h = 82 * s;
+        roundRect(xa, y - h, wd, h, 8 * s); ctx.fillStyle = 'rgba(170,225,255,.92)'; ctx.fill();
+        ctx.lineWidth = 3 * s; ctx.strokeStyle = '#5ab0e0'; ctx.stroke();
+        ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.fillRect(xa + 8 * s, y - h + 6 * s, 8 * s, h - 14 * s); ctx.fillRect(xa + 22 * s, y - h + 6 * s, 4 * s, h * 0.5);
+        break;
+      }
+      case 'thorns':
+      case 'crystal': {
+        const n = 5, cols = st === 'thorns' ? ['#3b2a50', '#5a3a7a'] : ['#c084fc', '#f472b6'];
+        for (let k = 0; k < n; k++) {
+          const cx = xa + wd * (k + 0.5) / n, hh = (62 + (k % 2) * 24) * s, ww = wd / n * 0.7;
+          ctx.fillStyle = cols[k % 2];
+          ctx.beginPath(); ctx.moveTo(cx - ww, y); ctx.lineTo(cx, y - hh); ctx.lineTo(cx + ww, y); ctx.closePath(); ctx.fill();
+        }
+        break;
+      }
+    }
+    if (w.flash > 0) { ctx.fillStyle = 'rgba(255,255,255,.3)'; ctx.fillRect(xa, y - 75 * s, wd, 75 * s); }
+    ctx.globalAlpha = 1;
+  }
+
+  function drawAttackLane(a) {
+    // franja de aviso o de impacto en el carril
+    const zf = a.warn > 0 ? a.z : Math.max(a.z, 0.3);
+    const blink = a.warn > 0 ? 0.22 + 0.25 * Math.abs(Math.sin(G.time * 14)) : 0.22;
+    ctx.beginPath();
+    ctx.moveTo(sx(a.x0, -1), sy(-1)); ctx.lineTo(sx(a.x1, -1), sy(-1));
+    ctx.lineTo(sx(a.x1, zf), sy(zf)); ctx.lineTo(sx(a.x0, zf), sy(zf)); ctx.closePath();
+    ctx.fillStyle = `rgba(255,40,60,${blink})`; ctx.fill();
+    if (a.warn > 0) outlinedText('!', sx((a.x0 + a.x1) / 2, 2), sy(2) - 40, 44, '#ff3d5a', '#fff');
+  }
+  function drawAttack(a) {
+    if (a.warn > 0) return;
+    const s = sc(a.z), x = sx((a.x0 + a.x1) / 2, a.z), y = sy(a.z) - 26 * s;
+    for (let k = 3; k >= 1; k--) {
+      const zt = a.z + k * 1.2, st = sc(zt);
+      ctx.globalAlpha = 0.18 * (4 - k);
+      circle(sx((a.x0 + a.x1) / 2, zt), sy(zt) - 26 * st, 40 * st, a.color);
+    }
+    ctx.globalAlpha = 0.45; circle(x, y, 62 * s, a.color);
+    ctx.globalAlpha = 1; circle(x, y, 42 * s, a.color); circle(x, y, 20 * s, '#fff');
   }
 
   function drawBarrel(t) {
@@ -1009,7 +1205,7 @@
   function drawMember(m) {
     const z = m.oz, s = sc(z), x = sx(G.px + m.ox, z), y = sy(z);
     const pop = m.pop < 1 ? 0.4 + 0.6 * m.pop + Math.sin(m.pop * Math.PI) * 0.3 : 1;
-    const R = 20 * s * pop;
+    const R = 18 * s * pop;
     let hop = G.state === 'play' ? Math.abs(Math.sin(G.time * 11 + m.ph)) * 5 * s : 0;
     if (G.cheer > 0) hop += Math.sin((1 - G.cheer / 0.6) * Math.PI) * (14 + (m.ph % 1) * 14) * s;
     if (G.state === 'win') hop = Math.abs(Math.sin(G.time * 7 + m.ph)) * 26 * s;
@@ -1059,6 +1255,8 @@
     for (const d of scene.decor) list.push([d.z, 0, d]);
     if (G) {
       for (const g of G.gates) list.push([g.z + 0.01, 1, g]);
+      for (const w of G.walls) list.push([w.z + 0.02, 7, w]);
+      for (const a of G.attacks) list.push([a.z, 8, a]);
       for (const t of G.barrels) list.push([t.z, 2, t]);
       for (const e of G.enemies) list.push([e.z, 3, e]);
       if (G.boss) list.push([G.boss.z, 4, G.boss]);
@@ -1066,6 +1264,7 @@
       for (const b of G.bullets) list.push([b.z - 0.05, 6, b]);
     }
     list.sort((a, b) => b[0] - a[0]);
+    if (G) for (const a of G.attacks) drawAttackLane(a);
     for (const [, k, o] of list) {
       switch (k) {
         case 0: drawDecor(o); break;
@@ -1075,6 +1274,8 @@
         case 4: drawBoss(o); break;
         case 5: drawMember(o); break;
         case 6: drawBullet(o); break;
+        case 7: drawWall(o); break;
+        case 8: drawAttack(o); break;
       }
     }
   }
@@ -1131,7 +1332,8 @@
       outlinedText('Nivel ' + G.L, W / 2, 330, 64, '#ffe14d');
       outlinedText(G.lv.name, W / 2, 392, 32, '#fff');
       if (G.L === 1) outlinedText('← Arrastra para moverte →', W / 2, 470, 24, '#bff6ff');
-      outlinedText('¡Dispara a las puertas para mejorarlas!', W / 2, 510, 20, '#fff');
+      const tips = ['¡Dispara a las puertas para mejorarlas!', 'Rompe cajas ⭐ para mejorar tu arma', 'Si un carril parpadea en rojo... ¡apártate!', 'Puertas ⇄: cambian de azul a rojo', 'Puertas ▲▲: el número rojo no para de crecer', 'Puertas ◀ ▶: se mueven de carril', 'Los minijefes atacan muy seguido', '¡El jefe final es el más fuerte!'];
+      outlinedText(tips[(G.L - 1) % tips.length], W / 2, 510, 20, '#fff');
       ctx.globalAlpha = 1;
     }
     if (G.alert && G.state === 'play') {
