@@ -15,9 +15,9 @@
   const LEVELS = [
     { name: 'Pradera Florida', sky: ['#6ec3ff', '#dff3ff'], hills: ['#9bdc7a', '#7cc95c'], scenery: 'hills', grass: '#6cc24a', grass2: '#62b642', road: '#6b6f7a', curb: ['#ffffff', '#ff5a5a'], decor: ['flower', 'tree', 'bush', 'flower'], enemies: ['babosa'], boss: 'babosa' },
     { name: 'Bosque Susurro', sky: ['#59a9e6', '#d3efd5'], hills: ['#3c8a4a', '#2f7a3d'], scenery: 'forest', grass: '#3f9d4a', grass2: '#378f41', road: '#6a6458', curb: ['#ffffff', '#ffb02e'], decor: ['pine', 'tree', 'mushroom', 'pine'], enemies: ['babosa', 'murci'], boss: 'murci' },
-    { name: 'Playa Coral', sky: ['#40bdf5', '#fff5cc'], hills: ['#5fd0e8', '#38b6d8'], scenery: 'sea', grass: '#f4dc9b', grass2: '#ecd28a', road: '#7a7f8c', curb: ['#ffffff', '#2fa8ff'], decor: ['palm', 'starfish', 'umbrella', 'palm'], enemies: ['cangre'], boss: 'cangre', sea: true },
+    { name: 'Playa Coral', sky: ['#40bdf5', '#fff5cc'], hills: ['#5fd0e8', '#38b6d8'], scenery: 'sea', grass: '#f4dc9b', grass2: '#ecd28a', road: '#7a7f8c', curb: ['#ffffff', '#2fa8ff'], decor: ['palm', 'starfish', 'umbrella', 'palm'], enemies: ['cangre', 'babosa'], boss: 'cangre', sea: true },
     { name: 'Desierto Solar', sky: ['#ffae4d', '#ffeab8'], hills: ['#e9b56a', '#d99f4f'], scenery: 'dunes', grass: '#e8b86a', grass2: '#deab5a', road: '#6e6a66', curb: ['#ffffff', '#ff5a5a'], decor: ['cactus', 'rock', 'cactus'], enemies: ['roca', 'cangre'], boss: 'roca' },
-    { name: 'Montaña Nevada', sky: ['#86c3f5', '#f2f9ff'], hills: ['#c8dcef', '#a9c4de'], scenery: 'mountains', grass: '#f2f8ff', grass2: '#e1edf8', road: '#7b8594', curb: ['#ffffff', '#3d8fd6'], decor: ['snowpine', 'snowman', 'snowpine'], enemies: ['copito'], boss: 'copito' },
+    { name: 'Montaña Nevada', sky: ['#86c3f5', '#f2f9ff'], hills: ['#c8dcef', '#a9c4de'], scenery: 'mountains', grass: '#f2f8ff', grass2: '#e1edf8', road: '#7b8594', curb: ['#ffffff', '#3d8fd6'], decor: ['snowpine', 'snowman', 'snowpine'], enemies: ['copito', 'roca'], boss: 'copito' },
     { name: 'Volcán Ardiente', sky: ['#4a1e2a', '#ff8a50'], hills: ['#5a2c26', '#3e1d19'], scenery: 'volcano', grass: '#4a3a35', grass2: '#413230', road: '#2f2a2a', curb: ['#ffcc33', '#ff3d00'], decor: ['lavarock', 'deadtree', 'lavarock'], enemies: ['lava', 'roca'], boss: 'lava' },
     { name: 'Bosque Encantado', sky: ['#140f3c', '#4b3b8f'], hills: ['#241a5a', '#1b1446'], scenery: 'forest', grass: '#2c4a3a', grass2: '#274233', road: '#3e3a4c', curb: ['#ffffff', '#b56bff'], decor: ['mushroom', 'deadtree', 'lantern', 'mushroom'], enemies: ['fantasma', 'murci'], boss: 'fantasma', night: true },
     { name: 'Castillo Sombrío', sky: ['#2a1848', '#e07ab8'], hills: ['#4a3168', '#3a2554'], scenery: 'castle', grass: '#5b4a7a', grass2: '#53436f', road: '#3b3448', curb: ['#ffd54f', '#7c3aed'], decor: ['crystal', 'tower', 'crystal'], enemies: ['sombra', 'fantasma', 'lava'], boss: 'sombra' },
@@ -39,7 +39,7 @@
 
   // ================== Guardado ==================
   const SAVE_KEY = 'bichitos-ruta-v1';
-  const save = { unlocked: 1, stars: {}, partner: 'llamita', muted: false };
+  const save = { unlocked: 1, stars: {}, partner: 'llamita', muted: false, music: true };
   try { Object.assign(save, JSON.parse(localStorage.getItem(SAVE_KEY) || '{}')); } catch (e) { /* sin guardado */ }
   function persist() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) { /* ignorar */ } }
 
@@ -49,6 +49,7 @@
     function ensure() {
       if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { ac = null; } }
       if (ac && ac.state === 'suspended') ac.resume();
+      if (ac && mSong && !mTimer) startScheduler();
     }
     function tone(freq, dur, type = 'sine', vol = 0.15, slide = 0, delay = 0) {
       if (save.muted || !ac) return;
@@ -60,9 +61,101 @@
       o.connect(g).connect(ac.destination); o.start(t); o.stop(t + dur + 0.03);
     }
     const seq = (notes, step, dur, type, vol) => notes.forEach((f, i) => tone(f, dur, type, vol, 0, i * step));
+    // ---------- Música procedural (sin archivos) ----------
+    let mGain = null, mTimer = null, mSong = null, mStep = 0, mNext = 0, noiseBuf = null;
+    const midi = n => 440 * Math.pow(2, (n - 69) / 12);
+    function makeSong(seed, kind) {
+      const r = mulberry32(seed * 31 + (kind === 'boss' ? 7 : kind === 'menu' ? 3 : 1));
+      const minor = kind === 'boss';
+      const scale = minor ? [0, 2, 3, 5, 7, 8, 10] : [0, 2, 4, 7, 9];
+      const progs = [[0, 9, 5, 7], [0, 5, 7, 5], [9, 5, 0, 7], [0, 7, 9, 5]];
+      const prog = minor ? [0, 8, 3, 10] : kind === 'menu' ? [0, 5, 9, 7] : progs[seed % progs.length];
+      const root = 57 + (seed % 5);
+      const tempo = minor ? 150 : kind === 'menu' ? 104 : 116 + (seed % 4) * 6;
+      const mel = [];
+      for (let s = 0; s < 64; s++) {
+        const strong = s % 4 === 0, even = s % 2 === 0;
+        let n = null;
+        if ((strong && r() < 0.85) || (even && !strong && r() < 0.4) || (!even && r() < 0.1)) {
+          n = root + 12 + scale[Math.floor(r() * scale.length)] + (r() < 0.15 ? 12 : 0);
+        }
+        mel.push(n);
+      }
+      for (let s = 32; s < 48; s++) mel[s] = mel[s - 32];
+      return { tempo, root, prog, mel, minor, kind };
+    }
+    function mNote(freq, t, dur, type, vol) {
+      const o = ac.createOscillator(), g = ac.createGain();
+      o.type = type; o.frequency.setValueAtTime(freq, t);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(vol, t + 0.012);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g).connect(mGain); o.start(t); o.stop(t + dur + 0.05);
+    }
+    function drum(t, kind) {
+      if (kind === 'kick') {
+        const o = ac.createOscillator(), g = ac.createGain();
+        o.frequency.setValueAtTime(150, t); o.frequency.exponentialRampToValueAtTime(40, t + 0.12);
+        g.gain.setValueAtTime(0.55, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
+        o.connect(g).connect(mGain); o.start(t); o.stop(t + 0.17);
+        return;
+      }
+      if (!noiseBuf) {
+        noiseBuf = ac.createBuffer(1, Math.floor(ac.sampleRate * 0.3), ac.sampleRate);
+        const d = noiseBuf.getChannelData(0);
+        for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+      }
+      const src = ac.createBufferSource(); src.buffer = noiseBuf;
+      const f = ac.createBiquadFilter(); f.type = kind === 'hat' ? 'highpass' : 'bandpass'; f.frequency.value = kind === 'hat' ? 7000 : 1800;
+      const g = ac.createGain(), dur = kind === 'hat' ? 0.04 : 0.12;
+      g.gain.setValueAtTime(kind === 'hat' ? 0.1 : 0.25, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+      src.connect(f).connect(g).connect(mGain); src.start(t); src.stop(t + dur + 0.02);
+    }
+    function playStep(st, t) {
+      const S = mSong, s16 = st % 16, bar = Math.floor(st / 16) % 4;
+      const chord = S.root + S.prog[bar], sd = 60 / S.tempo / 4;
+      if (s16 % 4 === 0 || (S.minor && s16 % 2 === 0)) mNote(midi(chord - 12 + (s16 === 8 ? 7 : 0)), t, sd * 1.8, 'triangle', 0.3);
+      if (!S.minor && s16 % 2 === 1) {
+        const arp = [0, 4, 7, 12];
+        mNote(midi(chord + arp[(s16 >> 1) % 4]), t, sd * 1.5, 'sine', 0.07);
+      }
+      const n = S.mel[st % 64];
+      if (n) mNote(midi(n), t, sd * 1.7, 'square', 0.06);
+      if (s16 === 0 || s16 === 8 || (S.minor && (s16 === 10 || s16 === 6))) drum(t, 'kick');
+      if (s16 === 4 || s16 === 12) drum(t, 'snare');
+      if (s16 % 2 === 0 && S.kind !== 'menu') drum(t, 'hat');
+    }
+    function musicTick() {
+      if (!ac || !mSong || ac.state !== 'running') return;
+      const sd = 60 / mSong.tempo / 4;
+      if (mNext < ac.currentTime - 0.1) mNext = ac.currentTime + 0.02;
+      while (mNext < ac.currentTime + 0.15) { playStep(mStep, mNext); mNext += sd; mStep++; }
+    }
+    function startScheduler() {
+      if (!ac || !mSong) return;
+      if (!mGain) {
+        mGain = ac.createGain();
+        const f = ac.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 3200;
+        mGain.connect(f).connect(ac.destination);
+      }
+      mGain.gain.value = save.music && !save.muted ? 0.2 : 0;
+      mStep = 0; mNext = ac.currentTime + 0.05;
+      if (!mTimer) mTimer = setInterval(musicTick, 30);
+    }
+    function music(seed, kind) {
+      const id = kind + ':' + seed;
+      if (mSong && mSong.id === id) return;
+      mSong = makeSong(seed, kind); mSong.id = id;
+      startScheduler();
+    }
+    function refreshMusic() { if (mGain) mGain.gain.value = save.music && !save.muted ? 0.2 : 0; }
+    document.addEventListener('visibilitychange', () => {
+      if (!ac) return;
+      if (document.hidden) ac.suspend(); else ac.resume();
+    });
     let lastPop = 0, lastShoot = 0, lastHit = 0;
     return {
-      ensure,
+      ensure, music, refreshMusic,
       shoot() { const n = performance.now(); if (n - lastShoot > 110) { lastShoot = n; tone(900, 0.05, 'square', 0.025, -400); } },
       hit() { const n = performance.now(); if (n - lastHit > 70) { lastHit = n; tone(260, 0.05, 'triangle', 0.05, -80); } },
       pop() { const n = performance.now(); if (n - lastPop > 60) { lastPop = n; tone(520, 0.09, 'sine', 0.1, 500); } },
@@ -103,62 +196,92 @@
     const pick = a => a[Math.floor(rnd() * a.length)];
     const items = [];
     let p = 34;
-    const nSeg = 8 + L * 2;
-    let weaponBarrels = 0, lastType = '';
-    const good = () => (rnd() < 0.16 + L * 0.02 ? { op: 'x', val: L >= 6 && rnd() < 0.2 ? 3 : 2 } : { op: '+', val: ri(3 + L, 6 + L * 3) });
-    const bad = () => (L >= 3 && rnd() < 0.25 ? { op: '÷', val: L >= 6 && rnd() < 0.4 ? 3 : 2 } : { op: '-', val: ri(3 + L, 5 + L * 3) });
+    const nSeg = 18 + L * 3;
+    const mid = Math.floor(nSeg / 2);
+    let weaponBarrels = 0, lastType = '', prevType = '';
+    const grow = i => Math.floor(i * (0.4 + L * 0.05));
+    const good = i => (rnd() < 0.1 + L * 0.02 ? { op: 'x', val: L >= 6 && rnd() < 0.15 ? 3 : 2 } : { op: '+', val: ri(3 + L, 6 + L * 2) + grow(i) });
+    const bad = i => (L >= 3 && rnd() < 0.2 ? { op: '÷', val: L >= 6 && rnd() < 0.4 ? 3 : 2 } : { op: '-', val: ri(4 + L, 6 + L * 3) + grow(i) });
+    const hpAt = i => (1.6 + L * 0.6) * (1 + i * (0.1 + L * 0.01));
+    // Grupo de enemigos; devuelve la profundidad que ocupa
+    function horde(at, i, k, cx, spread = 0.16) {
+      const et = pick(lv.enemies), hp = hpAt(i);
+      const cols = Math.min(5, 1 + Math.ceil(k / 3));
+      let rows = 0;
+      for (let j = 0; j < k; j++) {
+        const row = Math.floor(j / cols), col = j % cols;
+        rows = row + 1;
+        const x = cx + (col - (cols - 1) / 2) * spread + (rnd() - 0.5) * 0.05;
+        const type = rnd() < 0.2 ? pick(lv.enemies) : et;
+        items.push({ kind: 'enemy', pos: at + row * 1.2 + rnd() * 0.4, x: clamp(x, -0.92, 0.92), type, hp, size: 1, power: 1, dyn: 1 });
+      }
+      return rows * 1.2;
+    }
     for (let i = 0; i < nSeg; i++) {
       let type;
       if (i === 0) type = 'gates';
       else if (i === 1) type = 'barrel';
       else if (i === 2) type = 'gates';
       else if (i === 3) type = 'horde';
+      else if (i === mid) type = 'mini';
       else {
-        do { const r = rnd(); type = r < 0.4 ? 'gates' : r < 0.75 ? 'horde' : 'barrel'; } while (type === lastType && type !== 'horde');
+        do {
+          const r = rnd();
+          type = r < 0.26 ? 'gates' : r < 0.66 ? 'horde' : r < 0.8 ? 'barrel' : 'guarded';
+        } while (type === lastType && (type !== 'horde' || prevType === 'horde'));
       }
-      lastType = type;
-      if (type === 'gates') {
+      prevType = lastType; lastType = type;
+      if (type === 'gates' || type === 'guarded') {
+        if (type === 'guarded') {
+          p += horde(p, i, 3 + Math.floor(L / 2) + Math.floor(i / 4), rnd() < 0.5 ? -0.5 : 0.5, 0.13) + 5;
+        }
         let a, b;
         const r = rnd();
         if (i === 0) { a = { op: '+', val: ri(4, 6) + L * 2 }; b = { op: 'x', val: 2 }; }
-        else if (i < 3 || r < 0.6) { a = good(); b = bad(); }
-        else if (r < 0.85) { a = good(); b = good(); }
-        else { a = bad(); b = bad(); }
+        else if (i < 3 || r < 0.6) { a = good(i); b = bad(i); }
+        else if (r < 0.82) { a = good(i); b = good(i); }
+        else { a = bad(i); b = bad(i); }
         if (rnd() < 0.5) [a, b] = [b, a];
         items.push({ kind: 'gate', pos: p, x0: -1, x1: 0, op: a.op, val: a.val });
         items.push({ kind: 'gate', pos: p, x0: 0, x1: 1, op: b.op, val: b.val });
         p += 16 + rnd() * 5;
       } else if (type === 'barrel') {
-        const hp = Math.round(8 + L * 4 + i * 4);
-        const wantWeapon = weaponBarrels < 4;
+        const hp = Math.round((8 + L * 5) * (1 + i * 0.12));
+        const wantWeapon = weaponBarrels < 6 || rnd() < 0.5;
         if (i > 2 && rnd() < 0.5) {
           const side = rnd() < 0.5 ? -1 : 1;
-          items.push({ kind: 'barrel', pos: p, x: side * 0.5, hp, reward: wantWeapon ? 'weapon' : 'squad', amount: ri(4, 6 + L) });
-          items.push({ kind: 'barrel', pos: p, x: -side * 0.5, hp: Math.round(hp * 0.8), reward: 'squad', amount: ri(4, 6 + L) });
+          items.push({ kind: 'barrel', pos: p, x: side * 0.5, hp, reward: wantWeapon ? 'weapon' : 'squad', amount: ri(4, 6 + L) + grow(i) });
+          items.push({ kind: 'barrel', pos: p, x: -side * 0.5, hp: Math.round(hp * 0.8), reward: 'squad', amount: ri(4, 6 + L) + grow(i) });
         } else {
-          items.push({ kind: 'barrel', pos: p, x: rnd() * 1.2 - 0.6, hp, reward: wantWeapon ? 'weapon' : 'squad', amount: ri(5, 8 + L) });
+          items.push({ kind: 'barrel', pos: p, x: rnd() * 1.2 - 0.6, hp, reward: wantWeapon ? 'weapon' : 'squad', amount: ri(5, 8 + L) + grow(i) });
         }
         if (wantWeapon) weaponBarrels++;
         p += 15 + rnd() * 4;
+      } else if (type === 'mini') {
+        // Minijefe con escolta
+        const hp = hpAt(i);
+        p += horde(p, i, 6 + L, 0, 0.18) + 3;
+        items.push({ kind: 'enemy', pos: p, x: 0, type: pick(lv.enemies), hp: hp * (18 + L * 2), size: 3, power: 4 + Math.floor(L / 2), dyn: 10 + L });
+        p += 22;
       } else {
-        const hpS = 2 + L * 0.6 + i * (0.3 + L * 0.08);
-        const k = 3 + Math.floor(L * 0.7) + Math.floor(i / 2);
-        const cx = rnd() * 1.2 - 0.6;
-        const et = pick(lv.enemies);
-        const cols = Math.min(4, 1 + Math.ceil(k / 3));
-        for (let j = 0; j < k; j++) {
-          const row = Math.floor(j / cols), col = j % cols;
-          const x = cx + (col - (cols - 1) / 2) * 0.17 + (rnd() - 0.5) * 0.05;
-          items.push({ kind: 'enemy', pos: p + row * 1.3 + rnd() * 0.4, x: clamp(x, -0.9, 0.9), type: et, hp: hpS, size: 1, power: 1 });
+        const k = i === 3 ? 3 + L : Math.min(34, 5 + L + Math.floor(i * (0.6 + L * 0.06)));
+        let depth;
+        if (rnd() < 0.3) {
+          // Dos grupos, uno por carril
+          const k2 = Math.ceil(k / 2);
+          depth = Math.max(horde(p, i, k2, -0.5, 0.14), horde(p, i, k - k2, 0.5, 0.14));
+        } else {
+          depth = horde(p, i, k, rnd() * 1.0 - 0.5);
         }
-        if (L >= 2 && rnd() < 0.5) {
-          items.push({ kind: 'enemy', pos: p + Math.ceil(k / cols) * 1.3 + 1.5, x: clamp(cx, -0.8, 0.8), type: pick(lv.enemies), hp: hpS * 6, size: 1.9, power: 4 });
+        if (rnd() < 0.3 + L * 0.06) {
+          items.push({ kind: 'enemy', pos: p + depth + 1.5, x: clamp(rnd() * 1.2 - 0.6, -0.8, 0.8), type: pick(lv.enemies), hp: hpAt(i) * 6, size: 1.9, power: 4, dyn: 5 });
+          depth += 2;
         }
-        p += 18 + rnd() * 5;
+        p += depth + 15 + rnd() * 5;
       }
     }
     items.sort((a, b) => a.pos - b.pos);
-    return { items, end: p + 22, bossHp: Math.round(300 * Math.pow(1.75, L - 1)), lv };
+    return { items, end: p + 22, bossHp: Math.round(300 * Math.pow(1.6, L - 1)), lv };
   }
 
   // ================== Estado ==================
@@ -201,12 +324,13 @@
     fx.length = 0;
     G = {
       L, lv: data.lv, items: data.items, idx: 0, end: data.end, bossHp: data.bossHp,
-      d: 0, count: 3, maxCount: 3, px: 0, weapon: 1, shootT: 0.2,
+      d: 0, count: 5, maxCount: 5, px: 0, weapon: 1, shootT: 0.2,
       gates: [], barrels: [], enemies: [], bullets: [], boss: null, texts: [], members: [],
-      time: 0, state: 'play', scroll: SCROLL, shake: 0, bossDrain: 0, bossTouched: false, banner: 2.6,
+      time: 0, state: 'play', scroll: SCROLL, shake: 0, bossDrain: 0, bossTouched: false, banner: 2.6, cheer: 0,
     };
     syncMembers();
     mode = 'play';
+    Sfx.music(L, 'level');
     showOverlay(null);
     btnPause.classList.remove('hidden');
   }
@@ -241,8 +365,13 @@
   function spawnItem(it, z) {
     if (it.kind === 'gate') G.gates.push({ z, x0: it.x0, x1: it.x1, op: it.op, val: it.val, prog: 0, flash: 0, done: false, used: false });
     else if (it.kind === 'barrel') G.barrels.push({ z, x: it.x, hp: it.hp, maxHp: it.hp, reward: it.reward, amount: it.amount, flash: 0 });
-    else G.enemies.push({ z, x: it.x, type: it.type, hp: it.hp, maxHp: it.hp, size: it.size, power: it.power, flash: 0, wob: Math.random() * 6, speed: 2.5 + Math.random() });
+    else {
+      const hp = it.hp + Math.min(squadDps(), 200 * WEAPONS[G.weapon].dps) * (0.065 + G.L * 0.007) * (it.dyn || 1);
+      G.enemies.push({ z, x: it.x, type: it.type, hp, maxHp: hp, size: it.size, power: it.power, flash: 0, wob: Math.random() * 6, speed: 2.5 + Math.random() });
+    }
   }
+  const squadDps = () => G.count * WEAPONS[G.weapon].dps;
+  const hurtMult = () => Math.max(1, Math.round(G.count / 45));
 
   const gateStep = g => (3 + G.L * 1.5) * (g.op === 'x' || g.op === '÷' ? 12 : 1);
   function bumpGate(g) {
@@ -264,7 +393,7 @@
     addText(G.px, 1, (diff >= 0 ? '+' : '') + diff, diff >= 0 ? '#7CFF6B' : '#FF5A5A', 1.5);
     const y = sy(0) - 60, x = sx(G.px, 0);
     burst(x, y, diff >= 0 ? '#7fd3ff' : '#ff7a7a', 18, 220, 6);
-    if (diff >= 0) Sfx.good(); else { Sfx.bad(); G.shake = 0.25; }
+    if (diff >= 0) { Sfx.good(); G.cheer = 0.6; } else { Sfx.bad(); G.shake = 0.25; }
     g.used = true;
     syncMembers();
   }
@@ -330,6 +459,7 @@
     G.time += dt;
     if (G.banner > 0) G.banner -= dt;
     if (G.shake > 0) G.shake -= dt;
+    if (G.cheer > 0) G.cheer -= dt;
     for (const t of G.texts) t.t += dt;
     G.texts = G.texts.filter(t => t.t < 1.3);
     for (const m of G.members) {
@@ -358,8 +488,10 @@
       spawnItem(it, it.pos - G.d);
     }
     if (!G.boss && G.d >= G.end) {
-      G.boss = { z: 50, x: 0, type: G.lv.boss, hp: G.bossHp, maxHp: G.bossHp, size: 5, flash: 0, speed: 1.7, wob: 0 };
+      const bhp = Math.round(G.bossHp + squadDps() * (14 + G.L * 0.6));
+      G.boss = { z: 50, x: 0, type: G.lv.boss, hp: bhp, maxHp: bhp, size: 5, flash: 0, speed: 2.3, wob: 0 };
       Sfx.boss();
+      Sfx.music(G.L, 'boss');
     }
 
     // Movimiento de objetos
@@ -377,7 +509,7 @@
       if (B.z > 1.6) B.z -= B.speed * dt;
       else {
         if (!G.bossTouched) { G.bossTouched = true; Sfx.ouch(); }
-        G.bossDrain += (4 + G.L) * dt;
+        G.bossDrain += (4 + G.L) * hurtMult() * dt;
         while (G.bossDrain >= 1 && G.count > 0) {
           G.bossDrain -= 1; G.count--; G.shake = 0.15;
           burst(sx(G.px, 0), sy(0) - 30, '#ff7a7a', 4, 150, 4);
@@ -439,7 +571,7 @@
       if (t.dead || t.bumped) continue;
       if (t.z <= 0.6 && t.z > -1 && Math.abs(t.x - G.px) < sr + 0.12) {
         t.bumped = true; t.dead = true;
-        const lost = Math.min(G.count, 2);
+        const lost = Math.min(G.count, 2 * hurtMult());
         G.count -= lost; G.shake = 0.2; Sfx.ouch();
         addText(G.px, 0.5, '-' + lost, '#FF5A5A', 1.2);
         burst(sx(t.x, t.z), sy(t.z) - 30, '#c98a4b', 12, 200, 6);
@@ -451,7 +583,7 @@
       if (e.dead) continue;
       if (e.z <= 0.7 && e.z > -1.5 && Math.abs(e.x - G.px) < sr + 0.05 * e.size) {
         e.dead = true;
-        const lost = Math.min(G.count, e.power);
+        const lost = Math.min(G.count, e.power * hurtMult());
         G.count -= lost; G.shake = 0.2; Sfx.ouch();
         addText(G.px, 0.5, '-' + lost, '#FF5A5A', 1.1);
         burst(sx(e.x, e.z), sy(e.z) - 20, Sprites.ENEMIES[e.type].body, 10, 180, 5);
@@ -814,7 +946,9 @@
     const z = m.oz, s = sc(z), x = sx(G.px + m.ox, z), y = sy(z);
     const pop = m.pop < 1 ? 0.4 + 0.6 * m.pop + Math.sin(m.pop * Math.PI) * 0.3 : 1;
     const R = 20 * s * pop;
-    const hop = G.state === 'play' || G.state === 'win' ? Math.abs(Math.sin(G.time * 11 + m.ph)) * 5 * s : 0;
+    let hop = G.state === 'play' ? Math.abs(Math.sin(G.time * 11 + m.ph)) * 5 * s : 0;
+    if (G.cheer > 0) hop += Math.sin((1 - G.cheer / 0.6) * Math.PI) * (14 + (m.ph % 1) * 14) * s;
+    if (G.state === 'win') hop = Math.abs(Math.sin(G.time * 7 + m.ph)) * 26 * s;
     shadow(x, y, R * 0.85);
     if (G.state === 'lose') ctx.globalAlpha = clamp(1 - G.endT, 0, 1);
     Sprites.draw(ctx, 'ally', m.type, x, y - hop, R);
@@ -979,7 +1113,7 @@
   // ================== Interfaz (DOM) ==================
   const $ = id => document.getElementById(id);
   const overlays = ['menu', 'levels', 'result', 'pause'].map($);
-  const btnPause = $('btnPause'), btnMute = $('btnMute');
+  const btnPause = $('btnPause'), btnMute = $('btnMute'), btnMusic = $('btnMusic');
   function showOverlay(id) {
     for (const o of overlays) o.classList.toggle('hidden', o.id !== id);
   }
@@ -992,6 +1126,7 @@
     G = null; mode = 'menu'; btnPause.classList.add('hidden');
     resetScene(LEVELS[Math.max(0, save.unlocked - 1)]);
     buildPartners(); showOverlay('menu');
+    Sfx.music(0, 'menu');
   }
   function buildPartners() {
     const box = $('partners'); box.innerHTML = '';
@@ -1026,6 +1161,7 @@
   function showResult(won) {
     if (!G) return;
     mode = 'result';
+    Sfx.music(0, 'menu');
     btnPause.classList.add('hidden');
     $('resTitle').textContent = won ? '¡Nivel superado!' : '¡Oh, no!';
     $('resStars').innerHTML = won ? '★'.repeat(G.stars) + `<span>${'★'.repeat(3 - G.stars)}</span>` : '';
@@ -1046,8 +1182,11 @@
   $('btnQuit').onclick = () => goMenu();
   btnPause.onclick = () => togglePause();
   function refreshMute() { btnMute.textContent = save.muted ? '🔇' : '🔊'; }
-  btnMute.onclick = () => { save.muted = !save.muted; persist(); refreshMute(); Sfx.ensure(); };
+  btnMute.onclick = () => { save.muted = !save.muted; persist(); refreshMute(); Sfx.ensure(); Sfx.refreshMusic(); };
   refreshMute();
+  function refreshMusicBtn() { btnMusic.classList.toggle('off', !save.music); }
+  btnMusic.onclick = () => { save.music = !save.music; persist(); refreshMusicBtn(); Sfx.ensure(); Sfx.refreshMusic(); };
+  refreshMusicBtn();
 
   // Gancho para pruebas automáticas
   window.__bichitos = {

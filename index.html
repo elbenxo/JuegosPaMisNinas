@@ -47,6 +47,8 @@
   .hud-btn { position: absolute; top: 6.2em; width: 2.2em; height: 2.2em; border-radius: 50%; background: rgba(20,12,50,.6); font-size: .95em; z-index: 5; display: flex; align-items: center; justify-content: center; }
   #btnPause { right: .6em; font-weight: 900; }
   #btnMute { right: 3.1em; }
+  #btnMusic { right: 5.6em; }
+  .hud-btn.off { opacity: .45; text-decoration: line-through; }
   .overlay ~ .hud-btn { z-index: 5; }
 </style>
 </head>
@@ -84,6 +86,7 @@
 
   <button id="btnPause" class="hud-btn hidden" aria-label="Pausa">❚❚</button>
   <button id="btnMute" class="hud-btn" aria-label="Sonido">🔊</button>
+  <button id="btnMusic" class="hud-btn" aria-label="Música">🎵</button>
 </div>
 <script src="js/sprites.js"></script>
 <script src="js/game.js"></script>
