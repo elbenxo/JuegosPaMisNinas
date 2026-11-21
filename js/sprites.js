@@ -107,74 +107,169 @@ const Sprites = (() => {
   function belly(g, r, fill) { ell(g, 0, r * 0.34, r * 0.55, r * 0.44, fill); }
   function shine(g, r) { ell(g, -r * 0.45, -r * 0.5, r * 0.18, r * 0.1, 'rgba(255,255,255,.55)', null, 0, -0.6); }
 
-  // ---------- aliados ----------
-  function drawAlly(g, key, r) {
+  // ---------- aliados (3 fases de evolución) ----------
+  const EVO = {
+    llamita: ['Llamita', 'Llamarón', 'Infernix'],
+    burbu: ['Burbu', 'Burbujón', 'Marejada'],
+    hojin: ['Hojín', 'Hojarasca', 'Silvano'],
+    chispi: ['Chispi', 'Chispazo', 'Voltarión'],
+    nievi: ['Nievi', 'Nevisca', 'Glaciara'],
+    lunita: ['Lunita', 'Lunaria', 'Celestia'],
+  };
+  const DEEP = {
+    llamita: ['#ff8a3d', '#ff6a2a', '#ff4a1a'], burbu: ['#4aa8ff', '#3a8ff0', '#2a72e0'],
+    hojin: ['#62c95a', '#4fb84a', '#3aa53a'], chispi: ['#ffd93b', '#ffc21a', '#ffae00'],
+    nievi: ['#a6e8ff', '#86dbff', '#64ccff'], lunita: ['#ff9ad5', '#f57cc6', '#e85cb8'],
+  };
+  function batWings(g, r, fill, line, sc = 1) {
+    for (const s of [-1, 1]) {
+      poly(g, [[s * r * 0.55, -r * 0.35], [s * r * (0.55 + 1.3 * sc), -r * (0.35 + 0.75 * sc)], [s * r * (0.55 + 1.05 * sc), -r * 0.2], [s * r * (0.55 + 1.15 * sc), r * 0.05], [s * r * (0.55 + 0.7 * sc), r * 0.05], [s * r * 0.75, r * 0.25]], fill, line, r * 0.06);
+    }
+  }
+  function brows(g, r) {
+    for (const s of [-1, 1]) {
+      g.beginPath(); g.moveTo(s * r * 0.18, -r * 0.43); g.lineTo(s * r * 0.52, -r * 0.5);
+      g.lineWidth = r * 0.075; g.strokeStyle = '#1b1b2f'; g.lineCap = 'round'; g.stroke();
+    }
+  }
+  function drawAlly(g, key, r, st = 1) {
     const c = ALLIES[key];
     const L = r * 0.08;
+    const col = DEEP[key][st - 1];
+    if (st === 3) {
+      const gr = g.createRadialGradient(0, -r * 0.1, r * 0.5, 0, -r * 0.1, r * 1.8);
+      gr.addColorStop(0, c.bullet + 'aa'); gr.addColorStop(1, c.bullet + '00');
+      g.fillStyle = gr; g.beginPath(); g.arc(0, -r * 0.1, r * 1.8, 0, TAU); g.fill();
+    }
+    // ----- elementos traseros -----
     switch (key) {
       case 'llamita':
-        flame(g, r * 0.85, r * 0.45, r * 0.75, 0.9);
-        flame(g, 0, -r * 0.7, r * 0.95);
+        if (st === 3) batWings(g, r, '#d32f2f', '#7a1010', 0.9);
+        flame(g, r * 0.85, r * 0.45, r * (0.75 + 0.2 * (st - 1)), 0.9);
+        if (st === 1) flame(g, 0, -r * 0.7, r * 0.95);
+        else if (st === 2) { flame(g, -r * 0.4, -r * 0.6, r * 0.8, -0.4); flame(g, r * 0.4, -r * 0.6, r * 0.8, 0.4); flame(g, 0, -r * 0.75, r * 1.05); }
+        else for (let k = -2; k <= 2; k++) flame(g, k * r * 0.3, -r * (0.55 + (2 - Math.abs(k)) * 0.08), r * (0.7 + (2 - Math.abs(k)) * 0.22), k * 0.38);
         break;
-      case 'burbu':
+      case 'burbu': {
+        const fh = 1.3 + 0.25 * (st - 1);
         g.beginPath();
         g.moveTo(-r * 0.35, -r * 0.75);
-        g.quadraticCurveTo(-r * 0.1, -r * 1.45, r * 0.25, -r * 1.3);
+        g.quadraticCurveTo(-r * 0.1, -r * (fh + 0.15), r * 0.25, -r * fh);
         g.quadraticCurveTo(r * 0.1, -r * 1.0, r * 0.38, -r * 0.75);
         g.closePath(); g.fillStyle = '#2b7fd6'; g.fill(); g.lineWidth = L; g.strokeStyle = c.line; g.stroke();
-        for (const s of [-1, 1]) ell(g, s * r * 0.95, -r * 0.05, r * 0.22, r * 0.38, '#2b7fd6', c.line, L * 0.8, s * 0.5);
+        const fs = 1 + 0.3 * (st - 1);
+        for (const s of [-1, 1]) ell(g, s * r * (0.95 + 0.1 * (st - 1)), -r * 0.05, r * 0.22 * fs, r * 0.38 * fs, '#2b7fd6', c.line, L * 0.8, s * 0.5);
+        if (st === 3) poly(g, [[r * 0.6, r * 0.5], [r * 1.5, r * 0.1], [r * 1.25, r * 0.55], [r * 1.55, r * 0.95]], '#2b7fd6', c.line, L * 0.8);
         break;
-      case 'chispi':
-        poly(g, [[r * 0.6, r * 0.4], [r * 1.25, r * 0.1], [r * 1.05, -r * 0.1], [r * 1.5, -r * 0.45], [r * 1.0, -r * 0.25], [r * 1.2, -r * 0.02], [r * 0.7, r * 0.15]], '#ffb300', c.line, L * 0.8);
+      }
+      case 'chispi': {
+        const k = 1 + 0.15 * (st - 1);
+        poly(g, [[r * 0.6, r * 0.4], [r * 1.25 * k, r * 0.1], [r * 1.05 * k, -r * 0.1], [r * 1.5 * k, -r * 0.45 * k], [r * 1.0 * k, -r * 0.25], [r * 1.2 * k, -r * 0.02], [r * 0.7, r * 0.15]], '#ffb300', c.line, L * 0.8);
+        if (st === 3) poly(g, [[-r * 0.6, r * 0.4], [-r * 1.3, r * 0.1], [-r * 1.1, -r * 0.1], [-r * 1.55, -r * 0.5], [-r * 1.0, -r * 0.25], [-r * 1.2, -r * 0.02], [-r * 0.7, r * 0.15]], '#ffb300', c.line, L * 0.8);
         break;
-      case 'lunita':
+      }
+      case 'lunita': {
+        const ws = [1, 1.3, 1.55][st - 1];
         for (const s of [-1, 1]) {
-          ell(g, s * r * 1.05, -r * 0.35, r * 0.55, r * 0.3, 'rgba(255,255,255,.95)', '#e0a0c8', L * 0.7, s * -0.6);
-          ell(g, s * r * 0.95, r * 0.05, r * 0.38, r * 0.2, 'rgba(255,255,255,.95)', '#e0a0c8', L * 0.7, s * -0.2);
+          ell(g, s * r * (0.6 + 0.45 * ws), -r * 0.35 * ws, r * 0.55 * ws, r * 0.3 * ws, 'rgba(255,255,255,.95)', '#e0a0c8', L * 0.7, s * -0.6);
+          ell(g, s * r * (0.6 + 0.35 * ws), r * 0.05, r * 0.38 * ws, r * 0.2 * ws, 'rgba(255,255,255,.95)', '#e0a0c8', L * 0.7, s * -0.2);
         }
         break;
+      }
       case 'nievi':
-        for (const s of [-1, 1]) poly(g, [[s * r * 0.55, -r * 0.6], [s * r * 0.95, -r * 1.15], [s * r * 0.85, -r * 0.45]], '#ffffff', c.line, L * 0.8);
+        if (st === 3) for (const s of [-1, 1]) {
+          poly(g, [[s * r * 0.6, -r * 0.3], [s * r * 1.85, -r * 0.95], [s * r * 1.4, -r * 0.25], [s * r * 1.8, r * 0.1], [s * r * 0.8, r * 0.2]], 'rgba(220,248,255,.95)', c.line, L * 0.7);
+        }
+        for (const s of [-1, 1]) poly(g, [[s * r * 0.55, -r * 0.6], [s * r * (0.95 + 0.1 * (st - 1)), -r * (1.15 + 0.15 * (st - 1))], [s * r * 0.85, -r * 0.45]], '#ffffff', c.line, L * 0.8);
+        break;
+      case 'hojin':
+        if (st === 3) for (const s of [-1, 1]) {
+          ell(g, s * r * 1.2, -r * 0.3, r * 0.75, r * 0.32, '#3fbf3a', '#2c7a27', L * 0.7, s * -0.5);
+          g.beginPath(); g.moveTo(s * r * 0.6, -r * 0.05); g.lineTo(s * r * 1.8, -r * 0.6); g.lineWidth = L * 0.5; g.strokeStyle = '#2c7a27'; g.stroke();
+        }
         break;
     }
-    feet(g, r, c.body, c.line);
-    body(g, r, c.body, c.line);
+    // ----- cuerpo -----
+    feet(g, r, col, c.line);
+    body(g, r, col, c.line);
     belly(g, r, c.belly);
     shine(g, r);
     cuteEyes(g, r);
+    if (st >= 2) brows(g, r);
     cuteMouth(g, r);
     cheeks(g, r, key === 'chispi' ? 'rgba(255,90,40,.7)' : undefined);
+    // ----- elementos delanteros / cabeza -----
     switch (key) {
       case 'hojin': {
-        g.beginPath(); g.moveTo(0, -r * 0.88); g.quadraticCurveTo(r * 0.05, -r * 1.1, 0, -r * 1.25);
-        g.lineWidth = L; g.strokeStyle = '#2c7a27'; g.stroke();
-        ell(g, -r * 0.28, -r * 1.3, r * 0.32, r * 0.14, '#3fbf3a', '#2c7a27', L * 0.7, 0.5);
-        ell(g, r * 0.28, -r * 1.3, r * 0.32, r * 0.14, '#3fbf3a', '#2c7a27', L * 0.7, -0.5);
+        if (st === 1) {
+          g.beginPath(); g.moveTo(0, -r * 0.88); g.quadraticCurveTo(r * 0.05, -r * 1.1, 0, -r * 1.25);
+          g.lineWidth = L; g.strokeStyle = '#2c7a27'; g.stroke();
+          ell(g, -r * 0.28, -r * 1.3, r * 0.32, r * 0.14, '#3fbf3a', '#2c7a27', L * 0.7, 0.5);
+          ell(g, r * 0.28, -r * 1.3, r * 0.32, r * 0.14, '#3fbf3a', '#2c7a27', L * 0.7, -0.5);
+        } else if (st === 2) {
+          for (const [x, rot] of [[-0.45, -0.9], [-0.15, -0.3], [0.15, 0.3], [0.45, 0.9]]) {
+            g.save(); g.translate(r * x, -r * 0.82); g.rotate(rot);
+            ell(g, 0, -r * 0.3, r * 0.13, r * 0.32, '#3fbf3a', '#2c7a27', L * 0.6);
+            g.restore();
+          }
+          ell(g, 0, -r * 1.05, r * 0.12, r * 0.12, '#ff6fa8', '#b0306a', L * 0.5);
+        } else {
+          for (let k = 0; k < 6; k++) { const a = k * TAU / 6; ell(g, Math.cos(a) * r * 0.28, -r * 1.12 + Math.sin(a) * r * 0.28, r * 0.2, r * 0.2, '#ff8ac0', '#b0306a', L * 0.5); }
+          ell(g, 0, -r * 1.12, r * 0.17, r * 0.17, '#ffe14d', '#b38600', L * 0.5);
+        }
         for (const [x, y] of [[-0.7, -0.35], [0.72, -0.3], [0.6, 0.55]]) ell(g, r * x, r * y, r * 0.09, r * 0.07, '#47a842');
         break;
       }
-      case 'chispi':
-        poly(g, [[-r * 0.05, -r * 0.85], [r * 0.2, -r * 1.25], [0, -r * 1.2], [r * 0.15, -r * 1.6], [-r * 0.22, -r * 1.1], [-r * 0.02, -r * 1.12], [-r * 0.2, -r * 0.85]], '#ffb300', c.line, L * 0.8);
+      case 'chispi': {
+        const bolt = (x, rot, sc2) => {
+          g.save(); g.translate(x, -r * 0.85); g.rotate(rot); g.scale(sc2, sc2);
+          poly(g, [[-r * 0.05, 0], [r * 0.2, -r * 0.4], [0, -r * 0.35], [r * 0.15, -r * 0.75], [-r * 0.22, -r * 0.25], [-r * 0.02, -r * 0.27], [-r * 0.2, 0]], '#ffb300', c.line, L * 0.8);
+          g.restore();
+        };
+        if (st === 1) bolt(0, 0, 1);
+        else if (st === 2) { bolt(-r * 0.3, -0.35, 1); bolt(r * 0.3, 0.35, 1); }
+        else for (let k = -2; k <= 2; k++) bolt(k * r * 0.25, k * 0.4, 1.1 - Math.abs(k) * 0.12);
         break;
-      case 'nievi':
-        for (const [x, rot] of [[-0.3, -0.35], [0, 0], [0.3, 0.35]]) {
-          g.save(); g.translate(r * x, -r * 0.85); g.rotate(rot);
-          poly(g, [[0, -r * 0.45], [r * 0.12, -r * 0.15], [0, r * 0.05], [-r * 0.12, -r * 0.15]], '#e8fbff', c.line, L * 0.6);
+      }
+      case 'nievi': {
+        const n = [3, 5, 7][st - 1];
+        for (let k = 0; k < n; k++) {
+          const t = n === 1 ? 0 : k / (n - 1) - 0.5;
+          g.save(); g.translate(r * t * (0.6 + 0.15 * st), -r * 0.85); g.rotate(t * 1.2);
+          const hh = 0.45 + (0.5 - Math.abs(t)) * 0.25 * (st - 1);
+          poly(g, [[0, -r * hh], [r * 0.12, -r * 0.15], [0, r * 0.05], [-r * 0.12, -r * 0.15]], '#e8fbff', c.line, L * 0.6);
           g.restore();
         }
         star(g, 0, r * 0.4, r * 0.14, r * 0.06, 6, '#9fdcf5');
         break;
+      }
       case 'lunita':
-        g.beginPath(); g.moveTo(0, -r * 0.88); g.quadraticCurveTo(r * 0.25, -r * 1.15, r * 0.1, -r * 1.35);
-        g.lineWidth = L * 0.8; g.strokeStyle = c.line; g.stroke();
-        star(g, r * 0.1, -r * 1.42, r * 0.24, r * 0.11, 5, '#ffe14d', '#c99a00', L * 0.6);
+        if (st === 1) {
+          g.beginPath(); g.moveTo(0, -r * 0.88); g.quadraticCurveTo(r * 0.25, -r * 1.15, r * 0.1, -r * 1.35);
+          g.lineWidth = L * 0.8; g.strokeStyle = c.line; g.stroke();
+          star(g, r * 0.1, -r * 1.42, r * 0.24, r * 0.11, 5, '#ffe14d', '#c99a00', L * 0.6);
+        } else {
+          g.beginPath(); g.arc(0, -r * 0.62, r * 0.16, 0.3 * Math.PI, 1.7 * Math.PI); g.arc(r * 0.06, -r * 0.62, r * 0.12, 1.6 * Math.PI, 0.4 * Math.PI, true);
+          g.closePath(); g.fillStyle = '#ffe14d'; g.fill();
+          if (st === 3) {
+            ell(g, 0, -r * 1.25, r * 0.6, r * 0.16, null, '#ffe14d', L * 1.1);
+            for (const [x, y] of [[-1.2, -1.1], [1.25, -1.0], [-1.0, 0.7], [1.1, 0.75]]) star(g, r * x, r * y, r * 0.15, r * 0.06, 5, '#fff6a8');
+          }
+        }
         break;
       case 'burbu':
         ell(g, r * 1.15, -r * 0.8, r * 0.12, r * 0.12, 'rgba(200,240,255,.6)', '#fff', L * 0.5);
         ell(g, r * 1.35, -r * 1.1, r * 0.07, r * 0.07, 'rgba(200,240,255,.6)', '#fff', L * 0.4);
+        if (st >= 2) for (let k = 0; k < 3; k++) { g.beginPath(); g.arc(0, r * (0.18 + k * 0.17), r * (0.35 - k * 0.04), 0.15 * Math.PI, 0.85 * Math.PI); g.lineWidth = L * 0.5; g.strokeStyle = '#9cc8ec'; g.stroke(); }
+        if (st === 3) for (const x of [-0.45, 0, 0.45]) {
+          g.beginPath(); g.moveTo(r * (x - 0.15), -r * 0.85); g.quadraticCurveTo(r * (x - 0.1), -r * 1.35, r * (x + 0.15), -r * 1.25);
+          g.quadraticCurveTo(r * (x + 0.02), -r * 1.15, r * (x + 0.12), -r * 0.88); g.closePath();
+          g.fillStyle = '#e8f8ff'; g.fill(); g.lineWidth = L * 0.5; g.strokeStyle = c.line; g.stroke();
+        }
         break;
       case 'llamita':
         ell(g, 0, r * 0.38, r * 0.12, r * 0.1, '#ffb070');
+        if (st === 3) star(g, 0, r * 0.38, r * 0.16, r * 0.07, 5, '#ffe14d', '#b36b00', L * 0.4);
         break;
     }
   }
@@ -453,7 +548,7 @@ const Sprites = (() => {
     const g = c.getContext('2d');
     g.translate(c.width / 2, r * 2.4);
     g.lineJoin = 'round'; g.lineCap = 'round';
-    if (kind === 'ally') drawAlly(g, key, r); else drawEnemy(g, key, r);
+    if (kind === 'ally') { const [k, st] = key.split('@'); drawAlly(g, k, r, +st || 1); } else drawEnemy(g, key, r);
     c.anchorY = r * 2.4 + r * 1.0;
     c.base = r;
     cache.set(id, c);
@@ -461,7 +556,7 @@ const Sprites = (() => {
   }
 
   const api = {
-    ALLIES, ENEMIES, dpr: 1,
+    ALLIES, ENEMIES, EVO, dpr: 1,
     // x,y = posición de los pies; R = radio del cuerpo en píxeles lógicos
     draw(ctx, kind, key, x, y, R) {
       const phys = R * api.dpr;

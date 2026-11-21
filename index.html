@@ -32,6 +32,9 @@
   .partner { background: rgba(255,255,255,.12); border-radius: .8em; padding: .2em .2em .35em; border: .15em solid transparent; display: flex; flex-direction: column; align-items: center; }
   .partner canvas { width: 4.2em; height: 4.2em; }
   .partner.sel { border-color: #ffe14d; background: color-mix(in srgb, var(--c) 45%, transparent); transform: scale(1.05); }
+  .diffrow { display: flex; gap: .4em; }
+  .diff { font-size: .85em; font-weight: 800; padding: .35em .9em; border-radius: .8em; background: rgba(255,255,255,.15); border: .12em solid transparent; }
+  .diff.sel { background: #4a3a9a; border-color: #ffe14d; }
   .pname { font-weight: 900; font-size: .9em; }
   .pelem { font-size: .65em; opacity: .85; }
   .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: .55em; width: 100%; max-width: 21em; }
@@ -60,6 +63,7 @@
     <h1>Bichitos<br><span>en Ruta</span></h1>
     <p class="sub">Elige tu compañero</p>
     <div id="partners" class="partners"></div>
+    <div id="diffRow" class="diffrow"></div>
     <button id="btnPlay" class="big">¡Jugar!</button>
     <p class="tip">Arrastra a izquierda y derecha para elegir puerta. Tus bichitos disparan solos: ¡dispara a las puertas para mejorarlas y a las cajas para conseguir armas!</p>
   </div>

@@ -62,7 +62,9 @@
 
   // ================== Guardado ==================
   const SAVE_KEY = 'bichitos-ruta-v1';
-  const save = { unlocked: 1, stars: {}, partner: 'llamita', muted: false, music: true };
+  const save = { unlocked: 1, stars: {}, partner: 'llamita', muted: false, music: true, diff: 1 };
+  const DIFF_HP = [0.5, 0.85, 1.15], DIFF_HIT = [0.6, 1, 1.2], DIFF_NAMES = ['Fácil', 'Normal', 'Difícil'];
+  const dHp = () => DIFF_HP[save.diff] || 1, dHit = () => DIFF_HIT[save.diff] || 1;
   try { Object.assign(save, JSON.parse(localStorage.getItem(SAVE_KEY) || '{}')); } catch (e) { /* sin guardado */ }
   function persist() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) { /* ignorar */ } }
 
@@ -186,6 +188,7 @@
       bad() { tone(300, 0.3, 'sawtooth', 0.09, -160); },
       tick() { tone(1200, 0.04, 'sine', 0.05); },
       upgrade() { seq([523, 659, 784, 1046], 0.08, 0.12, 'triangle', 0.14); },
+      evolve() { seq([392, 523, 659, 784, 1046, 1318, 1568], 0.09, 0.22, 'sine', 0.16); seq([196, 262, 330, 392], 0.18, 0.4, 'triangle', 0.1); },
       ouch() { tone(170, 0.14, 'square', 0.07, -70); },
       boss() { seq([196, 185, 175, 165], 0.18, 0.25, 'sawtooth', 0.08); },
       win() { seq([523, 659, 784, 659, 784, 1046], 0.13, 0.2, 'triangle', 0.15); },
@@ -224,6 +227,24 @@
     const mids = new Set();
     for (let k = 1; k <= nMini; k++) mids.add(Math.max(8, Math.floor((nSeg * k) / (nMini + 1))));
     let miniCount = 0;
+    const nWave = 1 + Math.floor(L / 3);
+    const waves = new Set();
+    for (let k = 1; k <= nWave; k++) { let w = Math.floor((nSeg * (k - 0.4)) / nWave) + 2; while (mids.has(w) || mids.has(w - 1) || mids.has(w + 1) || waves.has(w - 1) || w < 10) w++; waves.add(Math.min(w, nSeg - 1)); }
+    // Oleada tipo zombi: muchísimos bichos débiles ocupando toda la carretera
+    function wave(i, rowsN) {
+      const light = lv.enemies.filter(t => (ETRAITS[t].hp || 1) < 1.8);
+      const types = light.length ? light : lv.enemies;
+      const hp = hpAt(i) * 0.45, cols = 8;
+      items.push({ kind: 'alert', pos: p - 4, text: '¡OLEADA!' });
+      for (let rI = 0; rI < rowsN; rI++) {
+        for (let c = 0; c < cols; c++) {
+          if (rnd() < 0.12) continue;
+          const x = -0.9 + c * (1.8 / (cols - 1)) + (rnd() - 0.5) * 0.08;
+          items.push({ kind: 'enemy', pos: p + rI * 0.85 + rnd() * 0.5, x, type: types[(rI * 3 + c) % types.length], hp, size: 0.85, power: 1, dyn: 0.3, wave: true });
+        }
+      }
+      return rowsN * 0.85;
+    }
     let weaponBarrels = 0, lastType = '', prevType = '';
     const grow = i => Math.floor(i * (0.4 + L * 0.05));
     const good = i => (rnd() < 0.1 + L * 0.02 ? { op: 'x', val: L >= 6 && rnd() < 0.15 ? 3 : 2 } : { op: '+', val: ri(3 + L, 6 + L * 2) + grow(i) });
@@ -233,7 +254,7 @@
     function horde(at, i, k, cx, spread = 0.16) {
       const et = pick(lv.enemies), hp = hpAt(i);
       const light = lv.enemies.filter(t => (ETRAITS[t].hp || 1) < 1.8);
-      const cols = Math.min(5, 1 + Math.ceil(k / 3));
+      const cols = Math.min(7, 1 + Math.ceil(k / 3));
       let rows = 0;
       for (let j = 0; j < k; j++) {
         const row = Math.floor(j / cols), col = j % cols;
@@ -287,6 +308,7 @@
       else if (i === 3) type = 'horde';
       else if (i === 4) type = 'barrel';
       else if (mids.has(i)) type = 'mini';
+      else if (waves.has(i)) type = 'wave';
       else {
         do {
           const r = rnd();
@@ -312,6 +334,8 @@
         }
         if (wantWeapon) weaponBarrels++;
         p += 15 + rnd() * 4;
+      } else if (type === 'wave') {
+        p += wave(i, Math.round(8 + L * 1.1)) + 16;
       } else if (type === 'walls') {
         const rows = 1 + ri(0, L >= 3 ? 2 : 1);
         let prevFree = ri(0, 2);
@@ -330,7 +354,7 @@
         items.push({ kind: 'enemy', pos: p, x: 0, type: lv.enemies[(miniCount++ + L) % lv.enemies.length], hp: hp * (8 + L), size: 3, power: 4 + Math.floor(L / 2), dyn: 6 + Math.floor(L / 2), mini: true });
         p += 22;
       } else {
-        const k = i < 7 ? 3 + Math.floor(L / 2) + i : Math.min(34, 5 + L + Math.floor(i * (0.6 + L * 0.06)));
+        const k = i < 7 ? 3 + Math.floor(L / 2) + i : Math.min(44, 6 + L + Math.floor(i * (0.75 + L * 0.07)));
         let depth;
         if (rnd() < 0.3) {
           // Dos grupos, uno por carril
@@ -347,8 +371,9 @@
         p += depth + 15 + rnd() * 5;
       }
     }
+    if (L >= 2) p += wave(nSeg, Math.round(6 + L)) + 10;
     items.sort((a, b) => a.pos - b.pos);
-    return { items, end: p + 22, bossHp: Math.round(300 * Math.pow(1.6, L - 1)), lv };
+    return { items, end: p + 22, bossHp: Math.round(300 * Math.pow(1.5, L - 1)), lv };
   }
 
   // ================== Estado ==================
@@ -393,7 +418,7 @@
       L, lv: data.lv, items: data.items, idx: 0, end: data.end, bossHp: data.bossHp,
       d: 0, count: 2 + L * 3, maxCount: 2 + L * 3, px: 0, weapon: 1, shootT: 0.2,
       gates: [], walls: [], attacks: [], atkCD: 3, loss: {}, barrels: [], enemies: [], bullets: [], boss: null, texts: [], members: [],
-      time: 0, state: 'play', scroll: SCROLL, shake: 0, bossDrain: 0, bossTouched: false, banner: 2.6, cheer: 0, alert: null, bossSpawnT: 2,
+      time: 0, state: 'play', scroll: SCROLL, shake: 0, bossDrain: 0, bossTouched: false, banner: 2.6, cheer: 0, evo: 0, alert: null, bossSpawnT: 2,
     };
     syncMembers();
     mode = 'play';
@@ -412,13 +437,15 @@
     while (G.members.length < m) {
       const i = G.members.length;
       const [tx, tz] = formation(i);
-      const type = i === 0 || Math.random() < 0.4 ? save.partner : allyKeys[Math.floor(Math.random() * allyKeys.length)];
+      const type = save.partner;
       G.members.push({ ox: 0, oz: 0, tx, tz, pop: 0, ph: Math.random() * 6, type });
     }
     if (G.members.length > m) G.members.length = m;
     G.maxCount = Math.max(G.maxCount, G.count);
   }
   const squadRad = () => Math.sqrt(Math.min(G.count, MAX_SHOWN)) * 0.034 + 0.06;
+  const evoStage = () => (G.weapon >= 5 ? 3 : G.weapon >= 3 ? 2 : 1);
+  const partnerKey = () => save.partner + '@' + (G ? evoStage() : 1);
   const clampPx = () => { G.px = clamp(G.px, -0.92, 0.92); };
 
   function addText(x, z, text, color, size = 1) { G.texts.push({ x, z, text, color, size, t: 0 }); }
@@ -431,12 +458,13 @@
 
   function spawnItem(it, z) {
     if (it.kind === 'gate') G.gates.push({ z, x0: it.x0, x1: it.x1, op: it.op, val: it.val, prog: 0, flash: 0, done: false, used: false, mode: it.mode || '', alt: it.alt ? { op: it.alt.op, val: it.alt.val } : null, period: it.period || 1.5, rate: it.rate || 0, acc: 0, flipT: it.period || 1.5, speed: it.speed || 0, ph: it.ph || 0 });
+    else if (it.kind === 'alert') { G.alert = { text: it.text, t: 2.2, color: '#ff4d6a', sub: '¡Dispara sin parar!' }; Sfx.boss(); }
     else if (it.kind === 'wall') G.walls.push({ z, x0: it.x0, x1: it.x1, done: false, flash: 0 });
     else if (it.kind === 'barrel') G.barrels.push({ z, x: it.x, hp: it.hp, maxHp: it.hp, reward: it.reward, amount: it.amount, flash: 0 });
     else {
       const tr = ETRAITS[it.type] || {};
-      const hp = (it.hp + Math.min(squadDps(), 200 * WEAPONS[G.weapon].dps) * (0.05 + G.L * 0.005) * (it.dyn || 1)) * (tr.hp || 1);
-      G.enemies.push({ z, x: it.x, type: it.type, hp, maxHp: hp, size: it.size, power: it.power * (tr.power || 1), flash: 0, wob: Math.random() * 6, speed: (2.5 + Math.random()) * (tr.spd || 1), tr, mini: !!it.mini, child: !!it.child });
+      const hp = (it.hp + Math.min(squadDps(), 200 * WEAPONS[G.weapon].dps) * (0.05 + G.L * 0.003) * (it.dyn || 1)) * (tr.hp || 1) * dHp();
+      G.enemies.push({ z, x: it.x, type: it.type, hp, maxHp: hp, size: it.size, power: it.power * (tr.power || 1), flash: 0, wob: Math.random() * 6, speed: (2.5 + Math.random()) * (tr.spd || 1), tr, mini: !!it.mini, child: !!it.child, wave: !!it.wave });
       if (it.mini) { G.alert = { text: '¡MINIJEFE!', t: 2, color: '#ff8a3d' }; Sfx.boss(); }
     }
   }
@@ -447,7 +475,7 @@
     let inside = 0;
     for (const mm of G.members) { const x = G.px + mm.ox; if (x > x0 - 0.025 && x < x1 + 0.025) inside++; }
     if (!inside) return false;
-    const lost = Math.min(G.count, Math.max(1, Math.ceil((G.count * inside / m) * sev)));
+    const lost = Math.min(G.count, Math.max(1, Math.ceil((G.count * inside / m) * Math.min(0.95, sev * dHit()))));
     G.count -= lost; G.shake = 0.25; Sfx.ouch();
     G.loss[tag] = (G.loss[tag] || 0) + lost;
     addText(G.px, 0.5, '-' + lost, '#FF5A5A', 1.3);
@@ -459,7 +487,7 @@
     if (G.atkCD > 0 || G.time < 9) return false;
     const lane = aimed || Math.random() < 0.6 ? laneOf(G.px) : Math.floor(Math.random() * 3);
     G.attacks.push({ x0: LANE_X0[lane], x1: LANE_X0[lane] + LW, z: Math.min(srcZ, 40), warn: Math.max(0.65, 1.05 - G.L * 0.04), color, hit: false });
-    G.atkCD = Math.max(1, 2.6 - G.L * 0.15) * (1.7 - 0.7 * clamp(G.d / G.end, 0, 1));
+    G.atkCD = Math.max(1, 2.6 - G.L * 0.15) * (1.7 - 0.7 * clamp(G.d / G.end, 0, 1)) / dHit();
     return true;
   }
   const squadDps = () => G.count * WEAPONS[G.weapon].dps;
@@ -525,9 +553,17 @@
         const x = sx(t.x, t.z), y = sy(t.z) - 35 * sc(t.z);
         burst(x, y, '#c98a4b', 14, 200, 6); burst(x, y, '#ffd54f', 10, 160, 4);
         if (t.reward === 'weapon' && G.weapon < MAXW) {
+          const before = evoStage();
           G.weapon++;
           G.alert = { text: '¡' + WEAPONS[G.weapon].name + '!', t: 1.8, color: '#ffe14d', sub: 'Arma nivel ' + G.weapon };
           Sfx.upgrade();
+          if (evoStage() > before) {
+            const names = Sprites.EVO[save.partner];
+            G.evo = 1.4;
+            G.alert = { text: '¡EVOLUCIÓN!', t: 2.6, color: '#7fffd4', sub: names[before - 1] + ' → ' + names[evoStage() - 1] };
+            Sfx.evolve();
+            for (let k = 0; k < 4; k++) burst(sx(G.px, 0) + (Math.random() - 0.5) * 120, sy(0) - 40 - Math.random() * 60, ['#ffffff', '#7fffd4', '#ffe14d', Sprites.ALLIES[save.partner].bullet][k], 18, 260, 6);
+          }
         } else {
           const n = t.reward === 'weapon' ? 6 : t.amount;
           G.count = Math.min(500, G.count + n);
@@ -561,6 +597,7 @@
     if (G.banner > 0) G.banner -= dt;
     if (G.shake > 0) G.shake -= dt;
     if (G.cheer > 0) G.cheer -= dt;
+    if (G.evo > 0) G.evo -= dt;
     if (G.alert && (G.alert.t -= dt) <= 0) G.alert = null;
     for (const t of G.texts) t.t += dt;
     G.texts = G.texts.filter(t => t.t < 1.3);
@@ -590,7 +627,7 @@
       spawnItem(it, it.pos - G.d);
     }
     if (!G.boss && G.d >= G.end) {
-      const bhp = Math.round(G.bossHp + squadDps() * (7 + G.L * 0.3));
+      const bhp = Math.round((G.bossHp + squadDps() * (6 + G.L * 0.25)) * dHp());
       G.boss = { z: 50, x: 0, type: G.lv.boss, hp: bhp, maxHp: bhp, size: 5, flash: 0, speed: 2.3, wob: 0 };
       Sfx.boss();
       Sfx.music(G.L, 'boss');
@@ -616,7 +653,7 @@
     for (const a of G.attacks) {
       if (a.warn > 0) { a.warn -= dt; continue; }
       a.z -= 34 * dt;
-      if (!a.hit && a.z <= 0.4) { a.hit = true; laneHit(a.x0, a.x1, 0.55, 'ataque'); }
+      if (!a.hit && a.z <= 0.4) { a.hit = true; laneHit(a.x0, a.x1, 0.3 + 0.3 * clamp(G.d / G.end, 0, 1), 'ataque'); }
     }
     G.attacks = G.attacks.filter(a => a.z > -3);
     for (const b of G.barrels) { b.z -= dz; if (b.flash > 0) b.flash -= dt; }
@@ -628,7 +665,7 @@
         e.cd = (e.cd === undefined ? 1 + Math.random() * 2 : e.cd) - dt;
         if (e.cd <= 0 && launchAttack(e.z, Sprites.ENEMIES[e.type].body, e.mini)) e.cd = e.mini ? 2.6 : 4 + Math.random() * 3;
       }
-      if (e.z < 16 && e.z > 0) e.x += clamp(G.px - e.x, -1, 1) * 0.35 * dt;
+      if (e.z < 16 && e.z > 0) e.x += clamp(G.px - e.x, -1, 1) * (e.wave ? 0.18 : 0.35) * dt;
     }
     const B = G.boss;
     if (B) {
@@ -638,8 +675,8 @@
       if (G.bossAtkT <= 0 && B.z > 4) { G.atkCD = 0; if (launchAttack(B.z, Sprites.ENEMIES[B.type].body, true)) G.bossAtkT = Math.max(1.5, 3.2 - G.L * 0.15); }
       G.bossSpawnT -= dt;
       if (G.bossSpawnT <= 0 && B.z > 6) {
-        G.bossSpawnT = Math.max(1.8, 4 - G.L * 0.25);
-        const n = 2 + Math.floor(G.L / 3);
+        G.bossSpawnT = Math.max(2.6, 4.5 - G.L * 0.2);
+        const n = 1 + Math.floor(G.L / 4);
         for (let k = 0; k < n; k++) {
           const type = G.lv.enemies[Math.floor(Math.random() * G.lv.enemies.length)];
           spawnItem({ kind: 'enemy', x: clamp(B.x + (Math.random() - 0.5) * 0.8, -0.9, 0.9), type, hp: 2 + G.L, size: 1, power: 1, dyn: 1 }, B.z - 1.5 - Math.random());
@@ -739,7 +776,7 @@
       if (e.dead) continue;
       if (e.z <= 0.7 && e.z > -1.5 && Math.abs(e.x - G.px) < sr + 0.05 * e.size) {
         e.dead = true;
-        const lost = Math.min(G.count, e.power * hurtMult());
+        const lost = Math.min(G.count, Math.max(1, Math.round(e.power * hurtMult() * dHit())));
         G.loss.enemigo = (G.loss.enemigo || 0) + lost;
         G.count -= lost; G.shake = 0.2; Sfx.ouch();
         addText(G.px, 0.5, '-' + lost, '#FF5A5A', 1.1);
@@ -1156,7 +1193,7 @@
       Sprites.star(ctx, 0, -h - 26 * s, 22 * s, 10 * s, 5, '#ffe14d', '#b38600', 3 * s);
       outlinedText('ARMA', 0, -h - 58 * s, 18 * s, '#ffe14d');
     } else {
-      Sprites.draw(ctx, 'ally', save.partner, -10 * s, -h - 6 * s, 16 * s);
+      Sprites.draw(ctx, 'ally', partnerKey(), -10 * s, -h - 6 * s, 16 * s);
       outlinedText('+' + (t.reward === 'weapon' ? 6 : t.amount), 18 * s, -h - 24 * s, 22 * s, '#7CFF6B');
     }
     ctx.restore();
@@ -1205,13 +1242,20 @@
   function drawMember(m) {
     const z = m.oz, s = sc(z), x = sx(G.px + m.ox, z), y = sy(z);
     const pop = m.pop < 1 ? 0.4 + 0.6 * m.pop + Math.sin(m.pop * Math.PI) * 0.3 : 1;
-    const R = 18 * s * pop;
+    const st = evoStage();
+    const R = 18 * s * pop * [1, 1.12, 1.24][st - 1];
     let hop = G.state === 'play' ? Math.abs(Math.sin(G.time * 11 + m.ph)) * 5 * s : 0;
     if (G.cheer > 0) hop += Math.sin((1 - G.cheer / 0.6) * Math.PI) * (14 + (m.ph % 1) * 14) * s;
     if (G.state === 'win') hop = Math.abs(Math.sin(G.time * 7 + m.ph)) * 26 * s;
     shadow(x, y, R * 0.85);
     if (G.state === 'lose') ctx.globalAlpha = clamp(1 - G.endT, 0, 1);
-    Sprites.draw(ctx, 'ally', m.type, x, y - hop, R);
+    if (G.evo > 0) {
+      const k = Math.abs(Math.sin(G.evo * 12));
+      ctx.globalAlpha = 0.5 + 0.5 * k;
+      circle(x, y - hop - R, R * (1.3 + 0.3 * k), '#ffffff');
+      ctx.globalAlpha = 1;
+    }
+    Sprites.draw(ctx, 'ally', m.type + '@' + (G.evo > 0.7 ? Math.max(1, st - 1) : st), x, y - hop, R);
     ctx.globalAlpha = 1;
   }
 
@@ -1312,7 +1356,7 @@
     roundRect(px0, py - 6, pw, 12, 6); ctx.fillStyle = 'rgba(255,255,255,.25)'; ctx.fill();
     roundRect(px0, py - 6, Math.max(12, pw * prog), 12, 6); ctx.fillStyle = '#7CFF6B'; ctx.fill();
     Sprites.draw(ctx, 'enemy', G.lv.boss, px0 + pw + 4, py + 16, 11);
-    Sprites.draw(ctx, 'ally', save.partner, px0 + pw * prog, py + 14, 9);
+    Sprites.draw(ctx, 'ally', partnerKey(), px0 + pw * prog, py + 14, 9);
     // arma
     ctx.font = '700 13px system-ui, sans-serif'; ctx.fillStyle = '#fff'; ctx.textAlign = 'left';
     ctx.fillText('Arma:', px0, 60);
@@ -1425,7 +1469,7 @@
   function goMenu() {
     G = null; mode = 'menu'; btnPause.classList.add('hidden');
     resetScene(LEVELS[Math.max(0, save.unlocked - 1)]);
-    buildPartners(); showOverlay('menu');
+    buildPartners(); buildDiff(); showOverlay('menu');
     Sfx.music(0, 'menu');
   }
   function buildPartners() {
@@ -1437,10 +1481,19 @@
       b.style.setProperty('--c', a.body);
       b.appendChild(Sprites.portrait('ally', k, 120));
       const n = document.createElement('div'); n.className = 'pname'; n.textContent = a.name; b.appendChild(n);
-      const el = document.createElement('div'); el.className = 'pelem'; el.textContent = a.elem; b.appendChild(el);
+      const el = document.createElement('div'); el.className = 'pelem'; el.textContent = a.elem + ' · → ' + Sprites.EVO[k][1] + ' → ' + Sprites.EVO[k][2]; b.appendChild(el);
       b.onclick = () => { Sfx.ensure(); Sfx.tick(); save.partner = k; persist(); buildPartners(); };
       box.appendChild(b);
     }
+  }
+  function buildDiff() {
+    const box = $('diffRow'); box.innerHTML = '';
+    DIFF_NAMES.forEach((n, i) => {
+      const b = document.createElement('button');
+      b.className = 'diff' + (save.diff === i ? ' sel' : ''); b.textContent = n;
+      b.onclick = () => { Sfx.ensure(); Sfx.tick(); save.diff = i; persist(); buildDiff(); };
+      box.appendChild(b);
+    });
   }
   function buildLevels() {
     const grid = $('levelGrid'); grid.innerHTML = '';

@@ -45,6 +45,16 @@
 - [x] Grupo de bichitos más compacto para que quepa en un carril; consejos al empezar cada nivel.
 - [x] Algo menos de fuerza en los monstruos: la dificultad viene ahora sobre todo de moverse bien a tiempo.
 
+## v5 (evoluciones, oleadas, dificultad)
+- [x] Todo el grupo es del compañero elegido.
+- [x] Evolución en 3 fases según el arma (nivel 3 y nivel 5 de arma), con destello, fanfarria y rótulo:
+      Llamita→Llamarón→Infernix, Burbu→Burbujón→Marejada, Hojín→Hojarasca→Silvano,
+      Chispi→Chispazo→Voltarión, Nievi→Nevisca→Glaciara, Lunita→Lunaria→Celestia.
+      Cada fase es más grande y tiene rasgos nuevos (llamas, aletas, flores, rayos, cristales, alas, halo, aura).
+- [x] Oleadas tipo zombi: de 1 a 3 por nivel más una final antes del jefe (desde el nivel 2), con decenas
+      o más de 100 bichos débiles ocupando los 3 carriles. Aviso "¡OLEADA!". Hordas normales más grandes.
+- [x] Selector de dificultad Fácil / Normal / Difícil en el menú.
+
 ## Ideas siguientes
 - Más niveles o un modo infinito.
 - Tienda de mejoras entre niveles con monedas.
