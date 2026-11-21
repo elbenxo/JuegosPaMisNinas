@@ -24,6 +24,16 @@
       Botón 🎵 para quitar la música y 🔊 para silenciar todo.
 - [x] Los bichitos saltan de alegría al pasar una puerta buena y celebran al vencer al jefe.
 
+## v3 (armas, minijefes, monstruos)
+- [x] 6 armas que evolucionan rompiendo cajas, cada una con su aspecto y velocidad:
+      Burbujitas (muy lenta y débil) → Chispas → Doble rayo → Lluvia de estrellas → Súper láser → Rayo arcoíris.
+      Al mejorar aparece un rótulo grande con el nombre del arma.
+- [x] Entre 2 y 4 minijefes por nivel (con corona plateada y barra de vida); el jefe final invoca esbirros.
+- [x] 16 tipos de monstruo (8 nuevos: seta, abeja, pulpo, cactus, yeti, dragón, calabaza, ojo volador),
+      de 3 a 6 tipos por nivel, cada uno con su comportamiento: voladores, zigzag, tanques lentos que
+      golpean doble, saltarines, fantasmas que parpadean, y babosas/setas que se dividen al morir.
+- [x] Nuevo jefe final en varios niveles (seta, pulpo, cactus, yeti, dragón, calabaza).
+
 ## Ideas siguientes
 - Más niveles o un modo infinito.
 - Tienda de mejoras entre niveles con monedas.

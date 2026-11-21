@@ -3,24 +3,45 @@
   // ================== Configuración ==================
   const W = 540, H = 960;
   const HORIZON = 330, PLAYER_Y = 830, CX = W / 2, ROAD_HALF = 210, ZK = 0.048;
-  const SCROLL = 9, SPAWN_Z = 58, BULLET_SPEED = 48, BULLET_RANGE = 44;
+  const SCROLL = 9, SPAWN_Z = 58, BULLET_RANGE = 44;
   const MAX_SHOWN = 70;
   const WEAPONS = [null,
-    { int: 0.30, dps: 2.0, name: 'Burbujitas' },
-    { int: 0.26, dps: 2.8, name: 'Doble rayo' },
-    { int: 0.22, dps: 3.8, name: 'Súper rayo' },
-    { int: 0.19, dps: 5.0, name: 'Mega rayo' },
-    { int: 0.16, dps: 6.5, name: 'Ultra rayo' }];
+    { int: 0.6, dps: 1.2, speed: 20, name: 'Burbujitas', look: 'bubble' },
+    { int: 0.46, dps: 1.8, speed: 28, name: 'Chispas', look: 'spark' },
+    { int: 0.34, dps: 2.8, speed: 36, name: 'Doble rayo', look: 'double' },
+    { int: 0.26, dps: 4.0, speed: 44, name: 'Lluvia de estrellas', look: 'star' },
+    { int: 0.2, dps: 5.4, speed: 52, name: 'Súper láser', look: 'beam' },
+    { int: 0.14, dps: 7.2, speed: 60, name: 'Rayo arcoíris', look: 'rainbow' }];
+  const MAXW = WEAPONS.length - 1;
+  // Rasgos de cada monstruo: vida, velocidad, zigzag, vuelo, división al morir...
+  const ETRAITS = {
+    babosa: { hp: 1, spd: 0.8, split: 2 },
+    murci: { hp: 0.7, spd: 1.5, zig: 0.5, fly: 1 },
+    cangre: { hp: 1, spd: 1, zig: 0.8 },
+    roca: { hp: 2.2, spd: 0.5, power: 2 },
+    copito: { hp: 1, spd: 1.1, zig: 0.2 },
+    lava: { hp: 1.3, spd: 1 },
+    fantasma: { hp: 1, spd: 0.9, zig: 0.4, fly: 0.6, ghost: 1 },
+    sombra: { hp: 1.3, spd: 1.4 },
+    seta: { hp: 1.1, spd: 0.9, split: 3 },
+    abeja: { hp: 0.55, spd: 1.8, zig: 0.9, fly: 1 },
+    pulpo: { hp: 1.4, spd: 0.9, zig: 0.3 },
+    cactus: { hp: 1.9, spd: 0.6, power: 2 },
+    yeti: { hp: 2.2, spd: 0.8, power: 2 },
+    dragon: { hp: 1.2, spd: 1.5, fly: 0.7 },
+    calabaza: { hp: 1.2, spd: 1, hop: 1 },
+    ojo: { hp: 0.9, spd: 1.2, zig: 0.6, fly: 1.2 },
+  };
 
   const LEVELS = [
-    { name: 'Pradera Florida', sky: ['#6ec3ff', '#dff3ff'], hills: ['#9bdc7a', '#7cc95c'], scenery: 'hills', grass: '#6cc24a', grass2: '#62b642', road: '#6b6f7a', curb: ['#ffffff', '#ff5a5a'], decor: ['flower', 'tree', 'bush', 'flower'], enemies: ['babosa'], boss: 'babosa' },
-    { name: 'Bosque Susurro', sky: ['#59a9e6', '#d3efd5'], hills: ['#3c8a4a', '#2f7a3d'], scenery: 'forest', grass: '#3f9d4a', grass2: '#378f41', road: '#6a6458', curb: ['#ffffff', '#ffb02e'], decor: ['pine', 'tree', 'mushroom', 'pine'], enemies: ['babosa', 'murci'], boss: 'murci' },
-    { name: 'Playa Coral', sky: ['#40bdf5', '#fff5cc'], hills: ['#5fd0e8', '#38b6d8'], scenery: 'sea', grass: '#f4dc9b', grass2: '#ecd28a', road: '#7a7f8c', curb: ['#ffffff', '#2fa8ff'], decor: ['palm', 'starfish', 'umbrella', 'palm'], enemies: ['cangre', 'babosa'], boss: 'cangre', sea: true },
-    { name: 'Desierto Solar', sky: ['#ffae4d', '#ffeab8'], hills: ['#e9b56a', '#d99f4f'], scenery: 'dunes', grass: '#e8b86a', grass2: '#deab5a', road: '#6e6a66', curb: ['#ffffff', '#ff5a5a'], decor: ['cactus', 'rock', 'cactus'], enemies: ['roca', 'cangre'], boss: 'roca' },
-    { name: 'Montaña Nevada', sky: ['#86c3f5', '#f2f9ff'], hills: ['#c8dcef', '#a9c4de'], scenery: 'mountains', grass: '#f2f8ff', grass2: '#e1edf8', road: '#7b8594', curb: ['#ffffff', '#3d8fd6'], decor: ['snowpine', 'snowman', 'snowpine'], enemies: ['copito', 'roca'], boss: 'copito' },
-    { name: 'Volcán Ardiente', sky: ['#4a1e2a', '#ff8a50'], hills: ['#5a2c26', '#3e1d19'], scenery: 'volcano', grass: '#4a3a35', grass2: '#413230', road: '#2f2a2a', curb: ['#ffcc33', '#ff3d00'], decor: ['lavarock', 'deadtree', 'lavarock'], enemies: ['lava', 'roca'], boss: 'lava' },
-    { name: 'Bosque Encantado', sky: ['#140f3c', '#4b3b8f'], hills: ['#241a5a', '#1b1446'], scenery: 'forest', grass: '#2c4a3a', grass2: '#274233', road: '#3e3a4c', curb: ['#ffffff', '#b56bff'], decor: ['mushroom', 'deadtree', 'lantern', 'mushroom'], enemies: ['fantasma', 'murci'], boss: 'fantasma', night: true },
-    { name: 'Castillo Sombrío', sky: ['#2a1848', '#e07ab8'], hills: ['#4a3168', '#3a2554'], scenery: 'castle', grass: '#5b4a7a', grass2: '#53436f', road: '#3b3448', curb: ['#ffd54f', '#7c3aed'], decor: ['crystal', 'tower', 'crystal'], enemies: ['sombra', 'fantasma', 'lava'], boss: 'sombra' },
+    { name: 'Pradera Florida', sky: ['#6ec3ff', '#dff3ff'], hills: ['#9bdc7a', '#7cc95c'], scenery: 'hills', grass: '#6cc24a', grass2: '#62b642', road: '#6b6f7a', curb: ['#ffffff', '#ff5a5a'], decor: ['flower', 'tree', 'bush', 'flower'], enemies: ['babosa', 'abeja', 'seta'], boss: 'babosa' },
+    { name: 'Bosque Susurro', sky: ['#59a9e6', '#d3efd5'], hills: ['#3c8a4a', '#2f7a3d'], scenery: 'forest', grass: '#3f9d4a', grass2: '#378f41', road: '#6a6458', curb: ['#ffffff', '#ffb02e'], decor: ['pine', 'tree', 'mushroom', 'pine'], enemies: ['seta', 'murci', 'abeja', 'babosa'], boss: 'seta' },
+    { name: 'Playa Coral', sky: ['#40bdf5', '#fff5cc'], hills: ['#5fd0e8', '#38b6d8'], scenery: 'sea', grass: '#f4dc9b', grass2: '#ecd28a', road: '#7a7f8c', curb: ['#ffffff', '#2fa8ff'], decor: ['palm', 'starfish', 'umbrella', 'palm'], enemies: ['cangre', 'pulpo', 'babosa'], boss: 'pulpo', sea: true },
+    { name: 'Desierto Solar', sky: ['#ffae4d', '#ffeab8'], hills: ['#e9b56a', '#d99f4f'], scenery: 'dunes', grass: '#e8b86a', grass2: '#deab5a', road: '#6e6a66', curb: ['#ffffff', '#ff5a5a'], decor: ['cactus', 'rock', 'cactus'], enemies: ['cactus', 'roca', 'cangre', 'abeja'], boss: 'cactus' },
+    { name: 'Montaña Nevada', sky: ['#86c3f5', '#f2f9ff'], hills: ['#c8dcef', '#a9c4de'], scenery: 'mountains', grass: '#f2f8ff', grass2: '#e1edf8', road: '#7b8594', curb: ['#ffffff', '#3d8fd6'], decor: ['snowpine', 'snowman', 'snowpine'], enemies: ['copito', 'yeti', 'roca'], boss: 'yeti' },
+    { name: 'Volcán Ardiente', sky: ['#4a1e2a', '#ff8a50'], hills: ['#5a2c26', '#3e1d19'], scenery: 'volcano', grass: '#4a3a35', grass2: '#413230', road: '#2f2a2a', curb: ['#ffcc33', '#ff3d00'], decor: ['lavarock', 'deadtree', 'lavarock'], enemies: ['lava', 'dragon', 'roca', 'murci'], boss: 'dragon' },
+    { name: 'Bosque Encantado', sky: ['#140f3c', '#4b3b8f'], hills: ['#241a5a', '#1b1446'], scenery: 'forest', grass: '#2c4a3a', grass2: '#274233', road: '#3e3a4c', curb: ['#ffffff', '#b56bff'], decor: ['mushroom', 'deadtree', 'lantern', 'mushroom'], enemies: ['fantasma', 'calabaza', 'murci', 'ojo'], boss: 'calabaza', night: true },
+    { name: 'Castillo Sombrío', sky: ['#2a1848', '#e07ab8'], hills: ['#4a3168', '#3a2554'], scenery: 'castle', grass: '#5b4a7a', grass2: '#53436f', road: '#3b3448', curb: ['#ffd54f', '#7c3aed'], decor: ['crystal', 'tower', 'crystal'], enemies: ['sombra', 'ojo', 'dragon', 'fantasma', 'yeti', 'lava'], boss: 'sombra' },
   ];
 
   // ================== Utilidades ==================
@@ -197,22 +218,27 @@
     const items = [];
     let p = 34;
     const nSeg = 18 + L * 3;
-    const mid = Math.floor(nSeg / 2);
+    const nMini = 2 + Math.floor(L / 3);
+    const mids = new Set();
+    for (let k = 1; k <= nMini; k++) mids.add(Math.max(8, Math.floor((nSeg * k) / (nMini + 1))));
+    let miniCount = 0;
     let weaponBarrels = 0, lastType = '', prevType = '';
     const grow = i => Math.floor(i * (0.4 + L * 0.05));
     const good = i => (rnd() < 0.1 + L * 0.02 ? { op: 'x', val: L >= 6 && rnd() < 0.15 ? 3 : 2 } : { op: '+', val: ri(3 + L, 6 + L * 2) + grow(i) });
     const bad = i => (L >= 3 && rnd() < 0.2 ? { op: '÷', val: L >= 6 && rnd() < 0.4 ? 3 : 2 } : { op: '-', val: ri(4 + L, 6 + L * 3) + grow(i) });
-    const hpAt = i => (1.6 + L * 0.6) * (1 + i * (0.1 + L * 0.01));
+    const hpAt = i => (0.6 + L * 0.2) * (1 + i * (0.08 + L * 0.006));
     // Grupo de enemigos; devuelve la profundidad que ocupa
     function horde(at, i, k, cx, spread = 0.16) {
       const et = pick(lv.enemies), hp = hpAt(i);
+      const light = lv.enemies.filter(t => (ETRAITS[t].hp || 1) < 1.8);
       const cols = Math.min(5, 1 + Math.ceil(k / 3));
       let rows = 0;
       for (let j = 0; j < k; j++) {
         const row = Math.floor(j / cols), col = j % cols;
         rows = row + 1;
         const x = cx + (col - (cols - 1) / 2) * spread + (rnd() - 0.5) * 0.05;
-        const type = rnd() < 0.2 ? pick(lv.enemies) : et;
+        let type = rnd() < 0.25 ? pick(lv.enemies) : et;
+        if ((ETRAITS[type].hp || 1) >= 1.8 && rnd() < 0.6) type = pick(light.length ? light : lv.enemies);
         items.push({ kind: 'enemy', pos: at + row * 1.2 + rnd() * 0.4, x: clamp(x, -0.92, 0.92), type, hp, size: 1, power: 1, dyn: 1 });
       }
       return rows * 1.2;
@@ -223,7 +249,8 @@
       else if (i === 1) type = 'barrel';
       else if (i === 2) type = 'gates';
       else if (i === 3) type = 'horde';
-      else if (i === mid) type = 'mini';
+      else if (i === 4) type = 'barrel';
+      else if (mids.has(i)) type = 'mini';
       else {
         do {
           const r = rnd();
@@ -246,8 +273,8 @@
         items.push({ kind: 'gate', pos: p, x0: 0, x1: 1, op: b.op, val: b.val });
         p += 16 + rnd() * 5;
       } else if (type === 'barrel') {
-        const hp = Math.round((8 + L * 5) * (1 + i * 0.12));
-        const wantWeapon = weaponBarrels < 6 || rnd() < 0.5;
+        const hp = Math.round((5 + L * 2.5) * (1 + i * 0.12));
+        const wantWeapon = weaponBarrels < 8 || rnd() < 0.5;
         if (i > 2 && rnd() < 0.5) {
           const side = rnd() < 0.5 ? -1 : 1;
           items.push({ kind: 'barrel', pos: p, x: side * 0.5, hp, reward: wantWeapon ? 'weapon' : 'squad', amount: ri(4, 6 + L) + grow(i) });
@@ -261,10 +288,10 @@
         // Minijefe con escolta
         const hp = hpAt(i);
         p += horde(p, i, 6 + L, 0, 0.18) + 3;
-        items.push({ kind: 'enemy', pos: p, x: 0, type: pick(lv.enemies), hp: hp * (18 + L * 2), size: 3, power: 4 + Math.floor(L / 2), dyn: 10 + L });
+        items.push({ kind: 'enemy', pos: p, x: 0, type: lv.enemies[(miniCount++ + L) % lv.enemies.length], hp: hp * (8 + L), size: 3, power: 4 + Math.floor(L / 2), dyn: 9 + L, mini: true });
         p += 22;
       } else {
-        const k = i === 3 ? 3 + L : Math.min(34, 5 + L + Math.floor(i * (0.6 + L * 0.06)));
+        const k = i < 7 ? 3 + Math.floor(L / 2) + i : Math.min(34, 5 + L + Math.floor(i * (0.6 + L * 0.06)));
         let depth;
         if (rnd() < 0.3) {
           // Dos grupos, uno por carril
@@ -326,7 +353,7 @@
       L, lv: data.lv, items: data.items, idx: 0, end: data.end, bossHp: data.bossHp,
       d: 0, count: 5, maxCount: 5, px: 0, weapon: 1, shootT: 0.2,
       gates: [], barrels: [], enemies: [], bullets: [], boss: null, texts: [], members: [],
-      time: 0, state: 'play', scroll: SCROLL, shake: 0, bossDrain: 0, bossTouched: false, banner: 2.6, cheer: 0,
+      time: 0, state: 'play', scroll: SCROLL, shake: 0, bossDrain: 0, bossTouched: false, banner: 2.6, cheer: 0, alert: null, bossSpawnT: 2,
     };
     syncMembers();
     mode = 'play';
@@ -366,8 +393,10 @@
     if (it.kind === 'gate') G.gates.push({ z, x0: it.x0, x1: it.x1, op: it.op, val: it.val, prog: 0, flash: 0, done: false, used: false });
     else if (it.kind === 'barrel') G.barrels.push({ z, x: it.x, hp: it.hp, maxHp: it.hp, reward: it.reward, amount: it.amount, flash: 0 });
     else {
-      const hp = it.hp + Math.min(squadDps(), 200 * WEAPONS[G.weapon].dps) * (0.065 + G.L * 0.007) * (it.dyn || 1);
-      G.enemies.push({ z, x: it.x, type: it.type, hp, maxHp: hp, size: it.size, power: it.power, flash: 0, wob: Math.random() * 6, speed: 2.5 + Math.random() });
+      const tr = ETRAITS[it.type] || {};
+      const hp = (it.hp + Math.min(squadDps(), 200 * WEAPONS[G.weapon].dps) * (0.065 + G.L * 0.007) * (it.dyn || 1)) * (tr.hp || 1);
+      G.enemies.push({ z, x: it.x, type: it.type, hp, maxHp: hp, size: it.size, power: it.power * (tr.power || 1), flash: 0, wob: Math.random() * 6, speed: (2.5 + Math.random()) * (tr.spd || 1), tr, mini: !!it.mini, child: !!it.child });
+      if (it.mini) { G.alert = { text: '¡MINIJEFE!', t: 2, color: '#ff8a3d' }; Sfx.boss(); }
     }
   }
   const squadDps = () => G.count * WEAPONS[G.weapon].dps;
@@ -430,9 +459,9 @@
         t.dead = true;
         const x = sx(t.x, t.z), y = sy(t.z) - 35 * sc(t.z);
         burst(x, y, '#c98a4b', 14, 200, 6); burst(x, y, '#ffd54f', 10, 160, 4);
-        if (t.reward === 'weapon' && G.weapon < 5) {
+        if (t.reward === 'weapon' && G.weapon < MAXW) {
           G.weapon++;
-          addText(t.x, t.z, '¡' + WEAPONS[G.weapon].name + '!', '#ffe14d', 1.2);
+          G.alert = { text: '¡' + WEAPONS[G.weapon].name + '!', t: 1.8, color: '#ffe14d', sub: 'Arma nivel ' + G.weapon };
           Sfx.upgrade();
         } else {
           const n = t.reward === 'weapon' ? 6 : t.amount;
@@ -446,6 +475,13 @@
       if (t.hp <= 0) {
         t.dead = true; Sfx.pop();
         burst(sx(t.x, t.z), sy(t.z) - 20 * sc(t.z) * t.size, Sprites.ENEMIES[t.type].body, 8 + t.size * 4, 140, 5 * sc(t.z) + 2);
+        if (t.tr.split && !t.child) {
+          for (let k = 0; k < t.tr.split; k++) {
+            const off = (k - (t.tr.split - 1) / 2) * 0.12 * Math.max(1, t.size * 0.6);
+            G.enemies.push({ z: t.z + 0.3, x: clamp(t.x + off, -0.92, 0.92), type: t.type, hp: t.maxHp * 0.3, maxHp: t.maxHp * 0.3, size: t.size * 0.6, power: Math.max(1, Math.ceil(t.power / 2)), flash: 0, wob: Math.random() * 6, speed: t.speed * 1.2, tr: t.tr, child: true });
+          }
+        }
+        if (t.mini) { addText(t.x, t.z, '¡Minijefe vencido!', '#ffe14d', 1.2); G.cheer = 0.6; Sfx.upgrade(); }
       }
     } else if (kind === 'boss') {
       t.hp -= dmg; t.flash = 0.06; Sfx.hit();
@@ -460,6 +496,7 @@
     if (G.banner > 0) G.banner -= dt;
     if (G.shake > 0) G.shake -= dt;
     if (G.cheer > 0) G.cheer -= dt;
+    if (G.alert && (G.alert.t -= dt) <= 0) G.alert = null;
     for (const t of G.texts) t.t += dt;
     G.texts = G.texts.filter(t => t.t < 1.3);
     for (const m of G.members) {
@@ -488,7 +525,7 @@
       spawnItem(it, it.pos - G.d);
     }
     if (!G.boss && G.d >= G.end) {
-      const bhp = Math.round(G.bossHp + squadDps() * (14 + G.L * 0.6));
+      const bhp = Math.round(G.bossHp + squadDps() * (10 + G.L * 0.4));
       G.boss = { z: 50, x: 0, type: G.lv.boss, hp: bhp, maxHp: bhp, size: 5, flash: 0, speed: 2.3, wob: 0 };
       Sfx.boss();
       Sfx.music(G.L, 'boss');
@@ -500,12 +537,22 @@
     for (const e of G.enemies) {
       e.z -= dz + (e.z < 24 ? e.speed : 0) * dt; e.wob += dt * 9;
       if (e.flash > 0) e.flash -= dt;
+      if (e.tr.zig) e.x = clamp(e.x + Math.cos(e.wob * 0.35) * e.tr.zig * dt, -0.95, 0.95);
       if (e.z < 16 && e.z > 0) e.x += clamp(G.px - e.x, -1, 1) * 0.35 * dt;
     }
     const B = G.boss;
     if (B) {
       B.wob += dt * 4; if (B.flash > 0) B.flash -= dt;
       B.x += (G.px - B.x) * 0.6 * dt;
+      G.bossSpawnT -= dt;
+      if (G.bossSpawnT <= 0 && B.z > 6) {
+        G.bossSpawnT = Math.max(1.8, 4 - G.L * 0.25);
+        const n = 2 + Math.floor(G.L / 3);
+        for (let k = 0; k < n; k++) {
+          const type = G.lv.enemies[Math.floor(Math.random() * G.lv.enemies.length)];
+          spawnItem({ kind: 'enemy', x: clamp(B.x + (Math.random() - 0.5) * 0.8, -0.9, 0.9), type, hp: 2 + G.L, size: 1, power: 1, dyn: 1 }, B.z - 1.5 - Math.random());
+        }
+      }
       if (B.z > 1.6) B.z -= B.speed * dt;
       else {
         if (!G.bossTouched) { G.bossTouched = true; Sfx.ouch(); }
@@ -528,7 +575,12 @@
       const dmg = (G.count * wp.dps * wp.int) / nb;
       for (let k = 0; k < nb; k++) {
         const m = G.members[nb === nm ? k : Math.floor(Math.random() * nm)];
-        G.bullets.push({ x: G.px + m.ox, z: m.oz + 0.4, dmg, life: BULLET_RANGE, color: Sprites.ALLIES[m.type].bullet });
+        const color = Sprites.ALLIES[m.type].bullet;
+        if (wp.look === 'double') {
+          for (const o of [-0.022, 0.022]) G.bullets.push({ x: G.px + m.ox + o, z: m.oz + 0.4, dmg: dmg / 2, life: BULLET_RANGE, color, spd: wp.speed, look: wp.look, ph: Math.random() * 6 });
+        } else {
+          G.bullets.push({ x: G.px + m.ox, z: m.oz + 0.4, dmg, life: BULLET_RANGE, color, spd: wp.speed, look: wp.look, ph: Math.random() * 6 });
+        }
       }
       Sfx.shoot();
     }
@@ -536,7 +588,7 @@
     // Balas
     for (const b of G.bullets) {
       const z0 = b.z;
-      b.z += BULLET_SPEED * dt; b.life -= BULLET_SPEED * dt;
+      b.z += b.spd * dt; b.life -= b.spd * dt;
       let hit = null, hk = '', hz = 1e9;
       const lo = z0 - 0.4, hi = b.z + 0.4;
       for (const g of G.gates) {
@@ -904,7 +956,7 @@
     ctx.fillStyle = 'rgba(255,255,255,.18)'; ctx.fillRect(-w / 2 + 6 * s, -h + 6 * s, 8 * s, h - 12 * s);
     outlinedText(String(Math.ceil(t.hp)), 0, -h * 0.52, 34 * s, '#fff');
     // icono de recompensa
-    if (t.reward === 'weapon' && G.weapon < 5) {
+    if (t.reward === 'weapon' && G.weapon < MAXW) {
       Sprites.star(ctx, 0, -h - 26 * s, 22 * s, 10 * s, 5, '#ffe14d', '#b38600', 3 * s);
       outlinedText('ARMA', 0, -h - 58 * s, 18 * s, '#ffe14d');
     } else {
@@ -917,10 +969,22 @@
   function drawEnemy(e) {
     const z = e.z, s = sc(z), x = sx(e.x, z), y = sy(z);
     const R = 21 * s * e.size * (e.flash > 0 ? 1.1 : 1);
-    const hop = Math.abs(Math.sin(e.wob)) * 6 * s;
-    shadow(x, y, R * 0.9);
+    const tr = e.tr;
+    let hop = Math.abs(Math.sin(e.wob)) * 6 * s;
+    if (tr.hop) hop = Math.abs(Math.sin(e.wob * 0.45)) * 34 * s * Math.min(e.size, 2);
+    if (tr.fly) hop = (tr.fly * 34 + Math.sin(e.wob * 0.7) * 8) * s * Math.min(e.size, 2);
+    shadow(x, y, R * (tr.fly ? 0.6 : 0.9));
+    if (tr.ghost) ctx.globalAlpha = 0.55 + 0.35 * Math.sin(e.wob * 0.4);
     Sprites.draw(ctx, 'enemy', e.type, x, y - hop, R);
-    if (e.size > 1) {
+    ctx.globalAlpha = 1;
+    if (e.mini) {
+      const cy = y - hop - R * 2.05, cw = R * 0.5;
+      ctx.fillStyle = '#c0c8d8'; ctx.strokeStyle = '#5a6478'; ctx.lineWidth = 2 * s;
+      ctx.beginPath(); ctx.moveTo(x - cw, cy); ctx.lineTo(x - cw, cy - R * 0.35); ctx.lineTo(x - cw * 0.4, cy - R * 0.15); ctx.lineTo(x, cy - R * 0.42); ctx.lineTo(x + cw * 0.4, cy - R * 0.15); ctx.lineTo(x + cw, cy - R * 0.35); ctx.lineTo(x + cw, cy); ctx.closePath(); ctx.fill(); ctx.stroke();
+      const bw = R * 1.8, by = cy - R * 0.62;
+      roundRect(x - bw / 2, by, bw, 9 * s + 2, 4); ctx.fillStyle = 'rgba(30,10,20,.75)'; ctx.fill();
+      roundRect(x - bw / 2, by, bw * clamp(e.hp / e.maxHp, 0, 1), 9 * s + 2, 4); ctx.fillStyle = '#ff8a3d'; ctx.fill();
+    } else if (e.size > 1.5) {
       outlinedText(String(Math.ceil(e.hp)), x, y - R * 2.6 - hop, 20 * s * e.size * 0.8, '#ffd0d0');
     }
   }
@@ -956,11 +1020,37 @@
   }
 
   function drawBullet(b) {
-    const s = sc(b.z), x = sx(b.x, b.z), y = sy(b.z) - 22 * s;
+    const s = sc(b.z), y = sy(b.z) - 22 * s;
+    let x = sx(b.x, b.z);
     ctx.globalAlpha = clamp(b.life / 6, 0, 1);
-    circle(x, y, 7 * s, b.color + '55');
-    circle(x, y, 4 * s, b.color);
-    circle(x, y, 2 * s, '#fff');
+    switch (b.look) {
+      case 'bubble':
+        x += Math.sin(b.z * 1.5 + b.ph) * 4 * s;
+        circle(x, y, 7 * s, 'rgba(200,240,255,.35)');
+        ctx.lineWidth = 1.5 * s; ctx.strokeStyle = b.color; ctx.beginPath(); ctx.arc(x, y, 7 * s, 0, Math.PI * 2); ctx.stroke();
+        circle(x - 2.5 * s, y - 2.5 * s, 2 * s, '#fff');
+        break;
+      case 'star':
+        Sprites.star(ctx, x, y, 9 * s, 4 * s, 5, b.color, '#fff', 1.5 * s);
+        break;
+      case 'beam':
+      case 'rainbow': {
+        const col = b.look === 'rainbow' ? `hsl(${(b.z * 25 + b.ph * 60) % 360},100%,60%)` : b.color;
+        const y2 = sy(b.z + 2.2) - 22 * sc(b.z + 2.2), x2 = sx(b.x, b.z + 2.2);
+        ctx.lineCap = 'round';
+        ctx.lineWidth = 9 * s; ctx.strokeStyle = col; ctx.globalAlpha *= 0.45;
+        ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x2, y2); ctx.stroke();
+        ctx.globalAlpha = clamp(b.life / 6, 0, 1);
+        ctx.lineWidth = 4 * s; ctx.strokeStyle = '#fff';
+        ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x2, y2); ctx.stroke();
+        ctx.lineCap = 'butt';
+        break;
+      }
+      default:
+        circle(x, y, 7 * s, b.color + '55');
+        circle(x, y, 4 * s, b.color);
+        circle(x, y, 2 * s, '#fff');
+    }
     ctx.globalAlpha = 1;
   }
 
@@ -1025,7 +1115,7 @@
     // arma
     ctx.font = '700 13px system-ui, sans-serif'; ctx.fillStyle = '#fff'; ctx.textAlign = 'left';
     ctx.fillText('Arma:', px0, 60);
-    for (let i = 1; i <= 5; i++) Sprites.star(ctx, px0 + 50 + i * 18, 56, 7, 3.2, 5, i <= G.weapon ? '#ffe14d' : 'rgba(255,255,255,.25)');
+    for (let i = 1; i <= MAXW; i++) Sprites.star(ctx, px0 + 44 + i * 17, 56, 7, 3.2, 5, i <= G.weapon ? '#ffe14d' : 'rgba(255,255,255,.25)');
     // Jefe
     if (G.boss) {
       const b = G.boss, bw = W - 80, bx = 40, by = 86;
@@ -1042,6 +1132,14 @@
       outlinedText(G.lv.name, W / 2, 392, 32, '#fff');
       if (G.L === 1) outlinedText('← Arrastra para moverte →', W / 2, 470, 24, '#bff6ff');
       outlinedText('¡Dispara a las puertas para mejorarlas!', W / 2, 510, 20, '#fff');
+      ctx.globalAlpha = 1;
+    }
+    if (G.alert && G.state === 'play') {
+      const a = G.alert;
+      ctx.globalAlpha = clamp(a.t * 2, 0, 1);
+      const sz = 46 * (1 + Math.max(0, a.t - 1.6) * 1.5);
+      outlinedText(a.text, W / 2, 200, sz, a.color);
+      if (a.sub) outlinedText(a.sub, W / 2, 245, 22, '#fff');
       ctx.globalAlpha = 1;
     }
     if (G.boss && G.boss.z > 30 && G.state === 'play') {

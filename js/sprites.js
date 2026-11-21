@@ -18,6 +18,14 @@ const Sprites = (() => {
     lava:     { body: '#5a3a30', line: '#2a1510' },
     fantasma: { body: '#d4c8ff', line: '#5b3bb0' },
     sombra:   { body: '#3d3556', line: '#120c22' },
+    seta:     { body: '#e53935', line: '#7a1010' },
+    abeja:    { body: '#ffc928', line: '#6a4a00' },
+    pulpo:    { body: '#d24fa8', line: '#6a1050' },
+    cactus:   { body: '#4caf50', line: '#1f5a22' },
+    yeti:     { body: '#f4f8ff', line: '#5a7a9a' },
+    dragon:   { body: '#e53950', line: '#6a0a1a' },
+    calabaza: { body: '#ff8c1a', line: '#7a3a00' },
+    ojo:      { body: '#7b4bc9', line: '#2a1050' },
   };
   const cache = new Map();
   const TAU = Math.PI * 2;
@@ -310,6 +318,126 @@ const Sprites = (() => {
         }
         angryEyes(g, r, '#ff1744', -0.1, '#ffe0e6');
         angryMouth(g, r, 0.35);
+        break;
+      }
+      case 'seta': {
+        feet(g, r, '#f3e3c3', c.line);
+        ell(g, 0, r * 0.25, r * 0.62, r * 0.68, '#f6ead0', c.line, L);
+        g.beginPath();
+        g.moveTo(-r * 1.15, -r * 0.15);
+        g.bezierCurveTo(-r * 1.2, -r * 1.25, r * 1.2, -r * 1.25, r * 1.15, -r * 0.15);
+        g.quadraticCurveTo(0, r * 0.1, -r * 1.15, -r * 0.15);
+        g.fillStyle = c.body; g.fill(); g.lineWidth = L; g.strokeStyle = c.line; g.stroke();
+        for (const [x, y, s] of [[-0.6, -0.55, 0.16], [0.1, -0.85, 0.14], [0.65, -0.45, 0.17], [-0.15, -0.4, 0.1]]) ell(g, r * x, r * y, r * s, r * s * 0.85, '#fff');
+        g.save(); g.translate(0, r * 0.25); g.scale(0.7, 0.7);
+        angryEyes(g, r, '#7a0f0f', -0.1);
+        angryMouth(g, r, 0.4);
+        g.restore();
+        break;
+      }
+      case 'abeja': {
+        for (const s of [-1, 1]) ell(g, s * r * 0.75, -r * 0.85, r * 0.55, r * 0.32, 'rgba(220,240,255,.75)', '#7aa8c8', L * 0.6, s * -0.5);
+        poly(g, [[-r * 0.15, r * 0.85], [0, r * 1.25], [r * 0.15, r * 0.85]], '#333', '#111', L * 0.5);
+        body(g, r, c.body, c.line);
+        g.save(); g.beginPath(); g.ellipse(0, 0, r, r * 0.93, 0, 0, TAU); g.clip();
+        g.fillStyle = '#2a2a2a';
+        g.fillRect(-r, r * 0.25, r * 2, r * 0.22); g.fillRect(-r, r * 0.65, r * 2, r * 0.22);
+        g.restore();
+        ell(g, 0, 0, r, r * 0.93, null, c.line, L);
+        for (const s of [-1, 1]) {
+          g.beginPath(); g.moveTo(s * r * 0.25, -r * 0.85); g.quadraticCurveTo(s * r * 0.35, -r * 1.3, s * r * 0.6, -r * 1.35);
+          g.lineWidth = L * 0.7; g.strokeStyle = '#222'; g.stroke();
+          ell(g, s * r * 0.6, -r * 1.35, r * 0.09, r * 0.09, '#222');
+        }
+        shine(g, r);
+        angryEyes(g, r, '#1b1b2f', -0.2);
+        angryMouth(g, r, 0.12);
+        break;
+      }
+      case 'pulpo': {
+        for (let k = 0; k < 6; k++) {
+          const x = -r * 0.85 + k * r * 0.34;
+          g.beginPath(); g.moveTo(x, r * 0.2);
+          g.quadraticCurveTo(x + (k % 2 ? r * 0.25 : -r * 0.25), r * 0.7, x + (k < 3 ? -r * 0.15 : r * 0.15), r * 1.0);
+          g.lineWidth = r * 0.26; g.strokeStyle = c.line; g.lineCap = 'round'; g.stroke();
+          g.lineWidth = r * 0.17; g.strokeStyle = c.body; g.stroke();
+        }
+        g.beginPath(); g.ellipse(0, -r * 0.15, r * 0.95, r * 0.9, 0, Math.PI * 0.95, Math.PI * 2.05); g.closePath();
+        g.fillStyle = c.body; g.fill(); g.lineWidth = L; g.strokeStyle = c.line; g.stroke();
+        for (const [x, y, s] of [[-0.5, -0.65, 0.1], [0.45, -0.75, 0.13], [0.1, -0.9, 0.07]]) ell(g, r * x, r * y, r * s, r * s, '#f7a8d8');
+        shine(g, r);
+        angryEyes(g, r, '#5a0050', -0.2);
+        ell(g, 0, r * 0.18, r * 0.14, r * 0.1, '#5a0a3a');
+        break;
+      }
+      case 'cactus': {
+        const rr = (x, y, w, h) => { g.beginPath(); if (g.roundRect) g.roundRect(x, y, w, h, w / 2); else g.rect(x, y, w, h); g.fillStyle = c.body; g.fill(); g.lineWidth = L; g.strokeStyle = c.line; g.stroke(); };
+        rr(-r * 1.2, -r * 0.7, r * 0.4, r * 0.9);
+        rr(r * 0.8, -r * 0.95, r * 0.4, r * 0.9);
+        feet(g, r, '#c98a4b', '#7a4a1f');
+        rr(-r * 0.8, -r * 1.05, r * 1.6, r * 2.0);
+        g.fillStyle = '#dff7c8';
+        for (const [x, y] of [[-0.55, -0.7], [0.5, -0.5], [-0.5, 0.5], [0.55, 0.6], [0, 0.75], [-1.0, -0.4], [1.0, -0.6]]) { g.beginPath(); g.arc(r * x, r * y, r * 0.045, 0, TAU); g.fill(); }
+        star(g, r * 0.25, -r * 1.08, r * 0.24, r * 0.1, 5, '#ff6fa8', '#b0306a', L * 0.5);
+        angryEyes(g, r, '#1b1b2f', -0.3);
+        angryMouth(g, r, 0.15);
+        break;
+      }
+      case 'yeti': {
+        for (const s of [-1, 1]) {
+          g.beginPath(); g.moveTo(s * r * 0.4, -r * 0.75); g.quadraticCurveTo(s * r * 0.9, -r * 1.0, s * r * 0.95, -r * 1.45);
+          g.quadraticCurveTo(s * r * 0.7, -r * 1.0, s * r * 0.2, -r * 0.85); g.closePath();
+          g.fillStyle = '#e8d9b8'; g.fill(); g.lineWidth = L * 0.6; g.strokeStyle = '#8a7a5a'; g.stroke();
+        }
+        feet(g, r, '#dfeaf5', c.line);
+        const pts = [];
+        for (let i = 0; i < 22; i++) {
+          const a = (i / 22) * TAU, rr = r * (i % 2 ? 0.92 : 1.08);
+          pts.push([Math.cos(a) * rr * 1.05, Math.sin(a) * rr * 0.95]);
+        }
+        poly(g, pts, c.body, c.line, L);
+        ell(g, 0, -r * 0.05, r * 0.6, r * 0.5, '#8fc4e8', c.line, L * 0.5);
+        angryEyes(g, r, '#123a6a', -0.15);
+        angryMouth(g, r, 0.22);
+        break;
+      }
+      case 'dragon': {
+        g.beginPath(); g.moveTo(r * 0.6, r * 0.5); g.quadraticCurveTo(r * 1.5, r * 0.6, r * 1.45, -r * 0.1);
+        g.lineWidth = r * 0.22; g.strokeStyle = c.line; g.stroke(); g.lineWidth = r * 0.14; g.strokeStyle = c.body; g.stroke();
+        poly(g, [[r * 1.3, -r * 0.05], [r * 1.65, -r * 0.35], [r * 1.55, r * 0.05]], '#ffcc33', c.line, L * 0.5);
+        for (const s of [-1, 1]) poly(g, [[s * r * 0.5, -r * 0.4], [s * r * 1.6, -r * 1.1], [s * r * 1.35, -r * 0.5], [s * r * 1.5, -r * 0.2], [s * r * 0.75, r * 0.1]], '#c2185b', c.line, L * 0.7);
+        for (const s of [-1, 1]) poly(g, [[s * r * 0.3, -r * 0.8], [s * r * 0.5, -r * 1.3], [s * r * 0.6, -r * 0.7]], '#ffe08a', c.line, L * 0.6);
+        feet(g, r, c.body, c.line);
+        body(g, r, c.body, c.line);
+        belly(g, r, '#ffd27a');
+        shine(g, r);
+        angryEyes(g, r, '#ff8a00', -0.15, '#fff6c0');
+        angryMouth(g, r, 0.3);
+        ell(g, -r * 0.12, r * 0.08, r * 0.05, r * 0.04, '#5a0a0a'); ell(g, r * 0.12, r * 0.08, r * 0.05, r * 0.04, '#5a0a0a');
+        break;
+      }
+      case 'calabaza': {
+        g.beginPath(); g.moveTo(0, -r * 0.8); g.quadraticCurveTo(r * 0.1, -r * 1.2, r * 0.3, -r * 1.25);
+        g.lineWidth = r * 0.16; g.strokeStyle = '#4a6b2a'; g.stroke();
+        for (const [x, w] of [[-0.55, 0.55], [0.55, 0.55], [0, 0.6]]) ell(g, r * x, r * 0.05, r * w, r * 0.88, c.body, c.line, L);
+        ell(g, -r * 0.35, -r * 0.45, r * 0.15, r * 0.08, 'rgba(255,255,255,.35)', null, 0, -0.5);
+        const glow = '#ffe14d';
+        for (const s of [-1, 1]) poly(g, [[s * r * 0.15, -r * 0.05], [s * r * 0.6, -r * 0.2], [s * r * 0.45, r * 0.12]], glow, '#7a3a00', L * 0.5);
+        poly(g, [[-r * 0.5, r * 0.3], [-r * 0.3, r * 0.45], [-r * 0.15, r * 0.32], [0, r * 0.48], [r * 0.15, r * 0.32], [r * 0.3, r * 0.45], [r * 0.5, r * 0.3], [r * 0.3, r * 0.65], [-r * 0.3, r * 0.65]], glow, '#7a3a00', L * 0.5);
+        break;
+      }
+      case 'ojo': {
+        g.beginPath(); g.moveTo(0, r * 0.7); g.bezierCurveTo(r * 0.4, r * 1.0, -r * 0.4, r * 1.2, r * 0.1, r * 1.4);
+        g.lineWidth = r * 0.2; g.strokeStyle = c.line; g.stroke(); g.lineWidth = r * 0.12; g.strokeStyle = c.body; g.stroke();
+        for (const s of [-1, 1]) poly(g, [[s * r * 0.7, -r * 0.2], [s * r * 1.75, -r * 0.7], [s * r * 1.55, -r * 0.1], [s * r * 1.3, r * 0.1], [s * r * 0.8, r * 0.2]], '#3a1f6a', c.line, L * 0.7);
+        body(g, r, c.body, c.line);
+        ell(g, 0, -r * 0.05, r * 0.62, r * 0.58, '#fff', c.line, L * 0.6);
+        ell(g, 0, 0, r * 0.32, r * 0.34, '#d81b60');
+        ell(g, 0, 0, r * 0.15, r * 0.17, '#1b1b2f');
+        ell(g, -r * 0.1, -r * 0.12, r * 0.07, r * 0.07, '#fff');
+        g.beginPath(); g.moveTo(-r * 0.7, -r * 0.62); g.lineTo(r * 0.7, -r * 0.62); g.lineTo(r * 0.55, -r * 0.4); g.lineTo(-r * 0.55, -r * 0.4); g.closePath();
+        g.fillStyle = c.body; g.fill();
+        g.beginPath(); g.moveTo(-r * 0.6, -r * 0.42); g.lineTo(r * 0.6, -r * 0.42); g.lineWidth = L; g.strokeStyle = c.line; g.stroke();
         break;
       }
     }
